@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VVS Pro — Prosjektstyring</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+</head>
+<style>
+:root{
+  --navy:#0F2340;--navy2:#1A3456;--orange:#FF6B35;--orange2:#FF8C5A;
+  --bg:#F0F4F8;--white:#FFFFFF;--border:#E2E8F0;
+  --text:#0F2340;--mid:#4A5568;--soft:#718096;
+  --green:#22C55E;--yellow:#F59E0B;--red:#EF4444;--blue:#3B82F6;
+  --sw:260px;--hh:60px;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;transition:width .2s}
+.s-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.logo-text{color:#fff;font-family:'Manrope',sans-serif;font-size:17px;font-weight:800}
+.logo-sub{color:rgba(255,255,255,.4);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.s-proj{margin:12px;background:var(--navy2);border-radius:8px;padding:11px;cursor:pointer}
+.s-proj-lbl{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px}
+.s-proj-name{color:#fff;font-size:13px;font-weight:600;margin-top:2px}
+.s-proj-meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+.s-btn{margin-top:7px;width:100%;background:var(--orange);color:#fff;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:600;cursor:pointer}
+.s-sec{padding:14px 14px 3px;font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:1px 6px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;transition:all .15s;position:relative;white-space:nowrap}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:var(--orange);color:#fff}
+.nav-item .ico{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nbadge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;flex-shrink:0}
+.nbadge.g{background:var(--green)}
+.s-user{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;cursor:pointer}
+.u-av{width:34px;height:34px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.u-name{color:#fff;font-size:13px;font-weight:600}
+.u-role{color:rgba(255,255,255,.4);font-size:11px}
+
+/* TOPBAR */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{height:var(--hh);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.tb-title{font-family:'Manrope',sans-serif;font-size:19px;font-weight:800;color:var(--navy)}
+.tb-bread{font-size:12px;color:var(--soft)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.tbtn{background:var(--orange);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.tbtn:hover{background:var(--orange2)}
+.tbtn.out{background:transparent;color:var(--navy);border:1px solid var(--border)}
+.tbtn.out:hover{background:var(--bg)}
+.notif-btn{width:36px;height:36px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:16px}
+.ndot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid #fff}
+.srch{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px}
+.srch input{border:none;background:transparent;outline:none;font-size:13px;color:var(--soft);width:150px;font-family:'Inter',sans-serif}
+
+/* CONTENT & VIEWS */
+.content{flex:1;overflow-y:auto;padding:22px}
+.view{display:none}
+.view.active{animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--r);box-shadow:0 2px 12px rgba(15,35,64,.07);padding:18px;border:1px solid var(--border)}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:var(--r);padding:16px 18px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(15,35,64,.07);position:relative;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(15,35,64,.12)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--orange)}
+.kpi.gr::before{background:var(--green)}.kpi.bl::before{background:var(--blue)}.kpi.yl::before{background:var(--yellow)}
+.kpi-lbl{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.8px}
+.kpi-val{font-family:'Manrope',sans-serif;font-size:26px;font-weight:800;color:var(--navy);margin:3px 0 1px}
+.kpi-sub{font-size:12px;color:var(--mid)}
+.kpi-trend{font-size:11px;font-weight:600;margin-top:3px}
+.up{color:var(--green)}.dn{color:var(--red)}
+.kpi-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.07}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mb{margin-bottom:18px}
+
+/* SECTION HEADER */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sh-t{font-size:14px;font-weight:700;color:var(--navy)}
+.sh-a{font-size:12px;color:var(--orange);font-weight:600;cursor:pointer}
+
+/* BADGES */
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;display:inline-block}
+.b-g{background:#DCFCE7;color:#16A34A}.b-b{background:#DBEAFE;color:#1D4ED8}
+.b-y{background:#FEF9C3;color:#CA8A04}.b-r{background:#FEE2E2;color:#DC2626}
+
+/* PROJECT ROW */
+.proj-row{display:flex;align-items:center;gap:12px;padding:11px 8px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;transition:background .1s}
+.proj-row:hover{background:var(--bg)}
+.proj-row:last-child{border-bottom:none}
+.proj-av{width:38px;height:38px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.proj-info{flex:1;min-width:0}
+.proj-name{font-size:13px;font-weight:600;color:var(--navy)}
+.proj-meta{font-size:11px;color:var(--soft);margin-top:1px}
+.pbar{height:4px;background:var(--border);border-radius:2px;margin-top:5px}
+.pfill{height:100%;border-radius:2px;background:var(--orange)}
+.pfill.g{background:var(--green)}
+
+/* ACTIVITY */
+.act{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.act:last-child{border-bottom:none}
+.adot{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:4px}
+.adot.g{background:var(--green)}.adot.b{background:var(--blue)}.adot.r{background:var(--red)}
+.atext{font-size:13px;color:var(--text)}
+.atime{font-size:11px;color:var(--soft);margin-top:1px}
+
+/* CHART */
+.chart-wrap{background:var(--bg);border-radius:8px;height:145px;display:flex;align-items:flex-end;gap:7px;padding:14px;overflow:hidden}
+.cbar{flex:1;border-radius:4px 4px 0 0;background:var(--navy);opacity:.13;cursor:pointer;transition:opacity .2s}
+.cbar.hi{background:var(--orange);opacity:1}
+.cbar:hover{opacity:.8}
+.clabels{display:flex;gap:7px;margin-top:5px}
+.clabel{flex:1;text-align:center;font-size:10px;color:var(--soft)}
+
+/* PDF VIEWER */
+.pdf-wrap{display:flex;flex-direction:column;height:calc(100vh - var(--hh))}
+.pdf-tb{background:#fff;border-bottom:1px solid var(--border);padding:7px 14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.tool{width:33px;height:33px;border-radius:7px;border:1px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;position:relative}
+.tool:hover{background:var(--bg);border-color:var(--navy)}.tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.tsep{width:1px;height:24px;background:var(--border);margin:0 2px}
+.tlbl{font-size:11px;color:var(--soft);font-weight:500}
+.zctrl{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--navy)}
+.zbtn{width:24px;height:24px;border-radius:5px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
+.pdf-ws{flex:1;display:flex;overflow:hidden}
+.pdf-thumbs{width:180px;flex-shrink:0;background:#374151;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:5px}
+.pdf-thumb{background:#fff;border-radius:4px;aspect-ratio:.77;cursor:pointer;border:2px solid transparent;overflow:hidden;position:relative;transition:border-color .15s}
+.pdf-thumb.on{border-color:var(--orange)}.pdf-thumb:hover{border-color:rgba(255,107,53,.5)}
+.pdf-tnum{position:absolute;bottom:3px;right:5px;font-size:9px;color:var(--soft);background:rgba(255,255,255,.85);padding:1px 4px;border-radius:3px}
+.pdf-canvas{flex:1;background:#5a6a7a;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;position:relative}
+.pdf-page{background:#fff;width:680px;min-height:860px;box-shadow:0 4px 40px rgba(0,0,0,.4);position:relative;cursor:crosshair;flex-shrink:0}
+.bp-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(59,130,246,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.pdf-rp{width:265px;flex-shrink:0;background:#fff;border-left:1px solid var(--border);overflow-y:auto}
+.ptabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.ptab{flex:1;padding:9px 6px;text-align:center;font-size:11px;font-weight:600;color:var(--soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.ptab.on{color:var(--orange);border-bottom-color:var(--orange)}
+.pcontent{padding:13px}
+.vm{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;transition:transform .15s;border:2px solid var(--orange);background:rgba(255,107,53,.15);color:var(--orange)}
+.vm:hover{transform:scale(1.25)}.vm.v{border-color:var(--blue);background:rgba(59,130,246,.15);color:var(--blue)}.vm.s{border-color:var(--green);background:rgba(34,197,94,.15);color:var(--green)}
+.qty-item{display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg);border-radius:7px;margin-bottom:6px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.qty-item:hover{border-color:var(--orange)}
+.qdot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.qname{font-size:12px;font-weight:600;color:var(--navy);flex:1}
+.qcount{font-size:13px;font-weight:700;color:var(--orange)}
+.qunit{font-size:10px;color:var(--soft)}
+
+/* AVVIK */
+.av-card{background:#fff;border-radius:var(--r);border:1px solid var(--border);padding:14px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s}
+.av-card:hover{box-shadow:0 4px 20px rgba(15,35,64,.12)}
+.av-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.av-id{font-size:11px;color:var(--soft);font-weight:600}
+.av-title{font-size:14px;font-weight:600;color:var(--navy);margin-top:2px}
+.av-meta{display:flex;gap:10px;margin-top:7px;font-size:12px;color:var(--soft);flex-wrap:wrap}
+.prio{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.ph{background:#FEE2E2;color:#DC2626}.pm{background:#FEF9C3;color:#CA8A04}.pl{background:#DCFCE7;color:#16A34A}
+
+/* AI */
+.ai-wrap{display:flex;flex-direction:column;height:calc(100vh - var(--hh))}
+.ai-hdr{background:linear-gradient(135deg,var(--navy),#1e3a5f);padding:18px 20px;color:#fff;flex-shrink:0}
+.ai-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,.8);margin-bottom:10px}
+.ai-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-title{font-family:'Manrope',sans-serif;font-size:20px;font-weight:800}
+.ai-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:3px}
+.ai-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:13px}
+.msg{display:flex;gap:9px}
+.msg.usr{flex-direction:row-reverse}
+.mav{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.mav.ai{background:var(--navy);color:#fff}.mav.usr{background:var(--orange);color:#fff}
+.mbubble{max-width:76%;padding:11px 14px;border-radius:12px;font-size:13px;line-height:1.55}
+.msg.ai .mbubble{background:#fff;border:1px solid var(--border);color:var(--text);border-radius:4px 12px 12px 12px}
+.msg.usr .mbubble{background:var(--navy);color:#fff;border-radius:12px 4px 12px 12px}
+.ai-chips{padding:9px 16px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:500;cursor:pointer;color:var(--navy);transition:all .15s}
+.chip:hover{background:var(--orange);color:#fff;border-color:var(--orange)}
+.ai-inp-row{padding:12px 16px;background:#fff;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.ai-inp{flex:1;border:1px solid var(--border);border-radius:22px;padding:9px 16px;font-size:13px;outline:none;font-family:'Inter',sans-serif;transition:border-color .15s}
+.ai-inp:focus{border-color:var(--orange)}
+.ai-send{width:38px;height:38px;border-radius:50%;background:var(--orange);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--bg);padding:9px 11px;text-align:left;font-size:11px;font-weight:600;color:var(--soft);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 11px;border-bottom:1px solid var(--border)}
+.tbl tr:hover td{background:var(--bg)}
+.tr-sum td{font-weight:800;background:var(--navy)!important;color:#fff}
+.tr-tot td{font-weight:700;background:var(--bg)!important}
+
+/* GANTT */
+.gr{display:flex;align-items:center;margin-bottom:5px}
+.gl{width:145px;font-size:12px;color:var(--navy);flex-shrink:0;font-weight:500}
+.ga{flex:1;height:22px;background:var(--bg);border-radius:4px;position:relative;overflow:hidden}
+.gb{height:100%;border-radius:4px;position:absolute;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:700;color:#fff}
+
+/* MILESTONE */
+.ms{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+.ms:last-child{border-bottom:none}
+.ms-ico{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ms-d{background:#DCFCE7}.ms-a{background:#DBEAFE}.ms-p{background:var(--bg)}
+.ms-name{font-size:13px;font-weight:600;color:var(--navy)}
+.ms-date{font-size:11px;color:var(--soft);margin-top:1px}
+.ms-pct{font-size:13px;font-weight:700;margin-left:auto;flex-shrink:0}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(15,35,64,.6);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-ov.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:540px;max-width:94vw;box-shadow:0 20px 60px rgba(15,35,64,.3);overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
+.modal-hdr{background:var(--navy);padding:18px 22px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-t{font-family:'Manrope',sans-serif;font-size:17px;font-weight:800}
+.modal-x{background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer;line-height:1}
+.modal-body{padding:20px;overflow-y:auto}
+.fr{margin-bottom:13px}
+.fl{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:5px;display:block}
+.fi{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:13px;outline:none;font-family:'Inter',sans-serif;transition:border-color .15s}
+.fi:focus{border-color:var(--orange)}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.modal-ft{padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;flex-shrink:0}
+.btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.btn-p{background:var(--orange);color:#fff}.btn-s{background:var(--bg);color:var(--navy);border:1px solid var(--border)}
+
+/* NOTIF */
+.notif-panel{position:fixed;top:66px;right:14px;width:320px;background:#fff;border-radius:var(--r);box-shadow:0 4px 24px rgba(15,35,64,.14);border:1px solid var(--border);z-index:500;display:none;overflow:hidden}
+.notif-panel.open{display:block}
+.np-hdr{padding:12px 15px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.np-clear{font-size:11px;font-weight:400;color:var(--soft);cursor:pointer}
+.np-item{padding:11px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.np-item:hover{background:var(--bg)}.np-item:last-child{border-bottom:none}
+.np-title{font-size:13px;font-weight:600;color:var(--navy)}
+.np-sub{font-size:12px;color:var(--soft);margin-top:1px}
+.np-time{font-size:11px;color:var(--soft);margin-top:3px}
+
+/* TOAST */
+.toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 18px;border-radius:22px;font-size:12px;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+.toast.show{opacity:1}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="s-logo">
+    <div class="logo-icon">🔧</div>
+    <div><div class="logo-text">VVS Pro</div><div class="logo-sub">Prosjektstyring</div></div>
+  </div>
+  <div class="s-proj" onclick="nav('prosjekt')">
+    <div class="s-proj-lbl">Aktivt prosjekt</div>
+    <div class="s-proj-name">Storfjord Skole</div>
+    <div class="s-proj-meta">NV-2024-047 · Tromsø</div>
+    <button class="s-btn" onclick="event.stopPropagation();openModal('newProjModal')">Bytt prosjekt ▼</button>
+  </div>
+  <div class="s-sec">Oversikt</div>
+  <div class="nav-item active" onclick="nav('dashboard',this)"><span class="ico">📊</span>Dashboard</div>
+  <div class="nav-item" onclick="nav('prosjekter',this)"><span class="ico">🏗️</span>Prosjekter<span class="nbadge g">4</span></div>
+  <div class="s-sec">Tegninger</div>
+  <div class="nav-item" onclick="nav('pdf',this)"><span class="ico">📐</span>Tegninger</div>
+  <div class="nav-item" onclick="nav('masseuttak',this)"><span class="ico">📏</span>Masseuttak</div>
+  <div class="s-sec">Oppfølging</div>
+  <div class="nav-item" onclick="nav('avvik',this)"><span class="ico">⚠️</span>Avvik<span class="nbadge">3</span></div>
+  <div class="nav-item" onclick="nav('fremdrift',this)"><span class="ico">📅</span>Fremdrift</div>
+  <div class="nav-item" onclick="nav('kalkyle',this)"><span class="ico">💰</span>Kalkyle</div>
+  <div class="nav-item" onclick="nav('befaring',this)"><span class="ico">🔍</span>Befaring</div>
+  <div class="s-sec">AI & Analyse</div>
+  <div class="nav-item" onclick="nav('ai',this)"><span class="ico">🤖</span>AI-assistent</div>
+  <div class="s-sec">Admin</div>
+  <div class="nav-item" onclick="nav('team',this)"><span class="ico">👥</span>Team</div>
+  <div class="s-user">
+    <div class="u-av">KL</div>
+    <div><div class="u-name">Kristoffer Larsen</div><div class="u-role">Prosjektleder</div></div>
+  </div>
+</nav>
+<div class="main">
+<div class="topbar">
+  <div>
+    <div class="tb-title" id="tb-title">Dashboard</div>
+    <div class="tb-bread">VVS Pro · Storfjord Skole</div>
+  </div>
+  <div class="tb-right">
+    <div class="srch">🔍<input placeholder="Søk..." id="searchInput"></div>
+    <button class="tbtn out" onclick="openModal('importModal')">📥 Importer PDF</button>
+    <button class="tbtn" onclick="openModal('newProjModal')">+ Nytt prosjekt</button>
+    <div class="notif-btn" onclick="toggleNotif()" id="notifBtn">🔔<span class="ndot"></span></div>
+  </div>
+</div>
+<div class="content" id="mainContent">
+<!-- ====== DASHBOARD ====== -->
+<div class="view active" id="v-dashboard">
+  <div class="kpi-grid">
+    <div class="kpi" onclick="nav('prosjekter')"><div class="kpi-lbl">Aktive prosjekter</div><div class="kpi-val">4</div><div class="kpi-sub">2 pågående · 2 planlagt</div><div class="kpi-trend up">▲ 1 ny denne måneden</div><div class="kpi-icon">🏗️</div></div>
+    <div class="kpi gr" onclick="nav('kalkyle')"><div class="kpi-lbl">Total budsjett</div><div class="kpi-val">8,4M</div><div class="kpi-sub">kr alle prosjekter</div><div class="kpi-trend up">✓ 94% innenfor budsjett</div><div class="kpi-icon">💰</div></div>
+    <div class="kpi bl" onclick="nav('fremdrift')"><div class="kpi-lbl">Timer denne uken</div><div class="kpi-val">186</div><div class="kpi-sub">av 220 planlagt</div><div class="kpi-trend up">▲ 84.5% effektivitet</div><div class="kpi-icon">⏱️</div></div>
+    <div class="kpi yl" onclick="nav('avvik')"><div class="kpi-lbl">Åpne avvik</div><div class="kpi-val">3</div><div class="kpi-sub">1 kritisk · 2 middels</div><div class="kpi-trend dn">▼ Krever oppfølging</div><div class="kpi-icon">⚠️</div></div>
+  </div>
+  <div class="g2 mb">
+    <div class="card">
+      <div class="sh"><span class="sh-t">Prosjektfremdrift</span><span class="sh-a" onclick="nav('prosjekter')">Se alle →</span></div>
+      <div class="proj-row" onclick="nav('prosjekt')"><div class="proj-av">🏫</div><div class="proj-info"><div class="proj-name">Storfjord Skole — VVS</div><div class="proj-meta">Tromsø · Frist 15. mars 2025</div><div class="pbar"><div class="pfill" style="width:68%"></div></div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700">68%</div><span class="badge b-g" style="margin-top:4px">Aktiv</span></div></div>
+      <div class="proj-row"><div class="proj-av" style="background:#1e40af">🏠</div><div class="proj-info"><div class="proj-name">Boligfelt Bjørndalen</div><div class="proj-meta">Alta · Frist 20. juni 2025</div><div class="pbar"><div class="pfill g" style="width:32%"></div></div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700">32%</div><span class="badge b-b" style="margin-top:4px">Tidlig</span></div></div>
+      <div class="proj-row"><div class="proj-av" style="background:#7c3aed">🏭</div><div class="proj-info"><div class="proj-name">Harstad Industribygg</div><div class="proj-meta">Harstad · Frist 1. des 2024</div><div class="pbar"><div class="pfill g" style="width:91%"></div></div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700">91%</div><span class="badge b-y" style="margin-top:4px">Avslutning</span></div></div>
+      <div class="proj-row"><div class="proj-av" style="background:#be185d">🏪</div><div class="proj-info"><div class="proj-name">Kjøpesenter Tromsø</div><div class="proj-meta">Tromsø · Frist 30. sep 2025</div><div class="pbar"><div class="pfill" style="width:12%"></div></div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700">12%</div><span class="badge b-b" style="margin-top:4px">Planl.</span></div></div>
+    </div>
+    <div class="card">
+      <div class="sh"><span class="sh-t">Økonomi — November 2024</span><span class="sh-a">Last ned</span></div>
+      <div class="chart-wrap">
+        <div class="cbar" style="height:45%"></div><div class="cbar" style="height:60%"></div>
+        <div class="cbar" style="height:52%"></div><div class="cbar hi" style="height:78%"></div>
+        <div class="cbar" style="height:38%"></div><div class="cbar" style="height:65%"></div>
+        <div class="cbar" style="height:55%"></div>
+      </div>
+      <div class="clabels"><span class="clabel">Man</span><span class="clabel">Tir</span><span class="clabel">Ons</span><span class="clabel">Tor</span><span class="clabel">Fre</span><span class="clabel">Lør</span><span class="clabel">Søn</span></div>
+      <div style="display:flex;gap:20px;margin-top:14px">
+        <div><div style="font-size:11px;color:var(--soft)">Inntekt</div><div style="font-size:16px;font-weight:700;color:var(--green)">1 240 000 kr</div></div>
+        <div><div style="font-size:11px;color:var(--soft)">Kostnad</div><div style="font-size:16px;font-weight:700;color:var(--red)">980 000 kr</div></div>
+        <div><div style="font-size:11px;color:var(--soft)">Margin</div><div style="font-size:16px;font-weight:700;color:var(--navy)">20.9%</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="sh"><span class="sh-t">Siste aktivitet</span><span class="sh-a">Se alt</span></div>
+      <div class="act"><div class="adot b"></div><div><div class="atext">Ole Hansen tegnet på <strong>Storfjord Skole Plan 2</strong></div><div class="atime">3 min siden</div></div></div>
+      <div class="act"><div class="adot r"></div><div><div class="atext">Nytt avvik: <strong>Rørlekkasje korridor B</strong></div><div class="atime">41 min siden · Marie Nilsen</div></div></div>
+      <div class="act"><div class="adot g"></div><div><div class="atext">Masseuttak fullført: <strong>234 m rør registrert</strong></div><div class="atime">2 timer siden · Kristoffer Larsen</div></div></div>
+      <div class="act"><div class="adot"></div><div><div class="atext">Tegning lastet opp: <strong>VVS_Plan3_rev03.pdf</strong></div><div class="atime">I går 16:24 · OneDrive sync</div></div></div>
+      <div class="act"><div class="adot b"></div><div><div class="atext">AI-analyse: <strong>47 ventiler oppdaget</strong></div><div class="atime">I går 14:02 · AI-assistent</div></div></div>
+    </div>
+    <div class="card">
+      <div class="sh"><span class="sh-t">Materialforbruk — topp 5</span></div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:3px"><span>🔵 Kobberrør Ø22</span><span style="color:var(--orange)">342 m</span></div><div class="pbar"><div class="pfill" style="width:85%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:3px"><span>🔴 Kobberrør Ø15</span><span style="color:var(--orange)">218 m</span></div><div class="pbar"><div class="pfill" style="width:54%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:3px"><span>🟡 Ventil DN25</span><span style="color:var(--orange)">47 stk</span></div><div class="pbar"><div class="pfill" style="width:47%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:3px"><span>🟢 Sluk DN100</span><span style="color:var(--orange)">23 stk</span></div><div class="pbar"><div class="pfill" style="width:35%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:3px"><span>🔷 Armatur type B</span><span style="color:var(--orange)">12 stk</span></div><div class="pbar"><div class="pfill" style="width:20%"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PDF VIEWER ====== -->
+<div class="view" id="v-pdf" style="margin:-22px">
+  <div class="pdf-wrap">
+    <div class="pdf-tb">
+      <span class="tlbl">Naviger:</span>
+      <button class="tool on" title="Pan" onclick="setTool(this,'pan')">✋</button>
+      <button class="tool" title="Zoom" onclick="setTool(this,'zoom')">🔍</button>
+      <div class="zctrl"><button class="zbtn" onclick="zoom(-15)">−</button><span id="zoomLvl">100%</span><button class="zbtn" onclick="zoom(15)">+</button></div>
+      <div class="tsep"></div>
+      <span class="tlbl">Tegn:</span>
+      <button class="tool" title="Penn" onclick="setTool(this,'pen')">✏️</button>
+      <button class="tool" title="Strek" onclick="setTool(this,'line')">╱</button>
+      <button class="tool" title="Pil" onclick="setTool(this,'arrow')">↗️</button>
+      <button class="tool" title="Sky" onclick="setTool(this,'cloud')">☁️</button>
+      <button class="tool" title="Sirkel" onclick="setTool(this,'circle')">⭕</button>
+      <button class="tool" title="Rektangel" onclick="setTool(this,'rect')">⬜</button>
+      <button class="tool" title="Tekst" onclick="setTool(this,'text')">🔤</button>
+      <button class="tool" title="Kommentar" onclick="setTool(this,'comment')">💬</button>
+      <div class="tsep"></div>
+      <span class="tlbl">Mål:</span>
+      <button class="tool" title="Lengde" onclick="setTool(this,'measure');measureMode()">📏</button>
+      <button class="tool" title="Areal" onclick="setTool(this,'area')">⊞</button>
+      <button class="tool" title="Tell" onclick="setTool(this,'count')">🔢</button>
+      <div class="tsep"></div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div class="color-dot" style="background:var(--orange);border:2px solid #fff;box-shadow:0 0 0 2px var(--orange)" onclick="setColor(this,'#FF6B35')"></div>
+        <div class="color-dot" onclick="setColor(this,'#3B82F6')"></div>
+        <div class="color-dot" style="background:var(--green)" onclick="setColor(this,'#22C55E')"></div>
+        <div class="color-dot" style="background:var(--red)" onclick="setColor(this,'#EF4444')"></div>
+        <div class="color-dot" style="background:var(--yellow)" onclick="setColor(this,'#F59E0B')"></div>
+      </div>
+      <div class="tsep"></div>
+      <button class="tool" title="Angre" onclick="showToast('↩ Angret')">↩️</button>
+      <button class="tool" title="Gjør om" onclick="showToast('↪ Gjort om')">↪️</button>
+      <div class="tsep"></div>
+      <button class="tool" title="AI analyse" onclick="nav('ai')" style="background:var(--navy)">🤖</button>
+      <button class="tbtn" style="margin-left:auto;padding:6px 14px;font-size:12px" onclick="showToast('📤 Eksportert til PDF')">📤 Eksporter</button>
+    </div>
+    <div class="pdf-ws">
+      <div class="pdf-thumbs">
+        <div class="pdf-thumb on" onclick="selectPage(this,1)">
+          <svg viewBox="0 0 120 155" style="width:100%;height:100%"><rect width="120" height="155" fill="#f0f4f8"/><rect x="15" y="30" width="90" height="60" fill="none" stroke="#94a3b8" stroke-width="1"/><line x1="15" y1="60" x2="105" y2="60" stroke="#94a3b8" stroke-width=".5"/><circle cx="40" cy="100" r="8" fill="rgba(255,107,53,.2)" stroke="#FF6B35" stroke-width="1.2"/><circle cx="70" cy="110" r="6" fill="rgba(34,197,94,.2)" stroke="#22C55E" stroke-width="1.2"/><line x1="15" y1="130" x2="105" y2="130" stroke="#FF6B35" stroke-width="1.5"/><text x="60" y="148" text-anchor="middle" font-size="8" fill="#64748b">Plan 1</text></svg>
+          <span class="pdf-tnum">1</span>
+        </div>
+        <div class="pdf-thumb" onclick="selectPage(this,2)">
+          <svg viewBox="0 0 120 155" style="width:100%;height:100%"><rect width="120" height="155" fill="#f0f4f8"/><rect x="10" y="15" width="100" height="80" fill="none" stroke="#94a3b8" stroke-width=".8"/><line x1="50" y1="15" x2="50" y2="95" stroke="#94a3b8" stroke-width=".5"/><circle cx="80" cy="70" r="10" fill="rgba(255,107,53,.1)" stroke="#FF6B35" stroke-width="1"/><text x="60" y="148" text-anchor="middle" font-size="8" fill="#64748b">Plan 2</text></svg>
+          <span class="pdf-tnum">2</span>
+        </div>
+        <div class="pdf-thumb" onclick="selectPage(this,3)">
+          <svg viewBox="0 0 120 155" style="width:100%;height:100%"><rect width="120" height="155" fill="#f0f4f8"/><line x1="40" y1="15" x2="40" y2="140" stroke="#94a3b8" stroke-width=".5"/><line x1="80" y1="15" x2="80" y2="140" stroke="#94a3b8" stroke-width=".5"/><text x="60" y="148" text-anchor="middle" font-size="8" fill="#64748b">Sjakt</text></svg>
+          <span class="pdf-tnum">3</span>
+        </div>
+        <div class="pdf-thumb" onclick="selectPage(this,4)">
+          <svg viewBox="0 0 120 155" style="width:100%;height:100%"><rect width="120" height="155" fill="#f0f4f8"/><circle cx="30" cy="40" r="12" fill="rgba(255,107,53,.15)" stroke="#FF6B35" stroke-width="1"/><circle cx="90" cy="40" r="12" fill="rgba(255,107,53,.15)" stroke="#FF6B35" stroke-width="1"/><text x="60" y="148" text-anchor="middle" font-size="8" fill="#64748b">Detaljer</text></svg>
+          <span class="pdf-tnum">4</span>
+        </div>
+      </div>
+      <div class="pdf-canvas" id="pdfCanvas">
+        <div class="pdf-page" id="pdfPage" onclick="pageClick(event)">
+          <div class="bp-bg"></div>
+          <svg style="position:absolute;inset:0;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
+            <rect width="680" height="860" fill="#f8fafc"/>
+            <rect x="20" y="20" width="640" height="790" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+            <rect x="20" y="810" width="640" height="50" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+            <text x="50" y="833" font-size="10" fill="#4a5568" font-family="Inter,sans-serif">STORFJORD BARNESKOLE — VVS ANLEGG</text>
+            <text x="50" y="848" font-size="8.5" fill="#718096" font-family="Inter,sans-serif">Tegnr: NV-VVS-001 | Rev: 03 | Dato: 2024-11-15 | 1:100</text>
+            <text x="530" y="833" font-size="9" fill="#4a5568" font-family="Inter,sans-serif">Plan 1. etasje</text>
+            <!-- Walls -->
+            <rect x="55" y="55" width="570" height="350" fill="none" stroke="#374151" stroke-width="2"/>
+            <line x1="55" y1="185" x2="370" y2="185" stroke="#374151" stroke-width="2"/>
+            <line x1="235" y1="55" x2="235" y2="405" stroke="#374151" stroke-width="2"/>
+            <line x1="370" y1="185" x2="370" y2="405" stroke="#374151" stroke-width="2"/>
+            <line x1="370" y1="55" x2="370" y2="165" stroke="#374151" stroke-width="2"/>
+            <line x1="370" y1="285" x2="625" y2="285" stroke="#374151" stroke-width="2"/>
+            <text x="130" y="130" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">ROM 101</text>
+            <text x="290" y="130" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">ROM 102</text>
+            <text x="470" y="170" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">KORRIDOR</text>
+            <text x="100" y="300" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">TOALETT</text>
+            <text x="285" y="300" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">TEKNISK</text>
+            <text x="460" y="360" font-size="9.5" fill="#6b7280" font-family="Inter,sans-serif">ROM 103</text>
+            <!-- Water pipes blue -->
+            <line x1="75" y1="210" x2="625" y2="210" stroke="#3B82F6" stroke-width="2.5" opacity=".7"/>
+            <line x1="150" y1="210" x2="150" y2="395" stroke="#3B82F6" stroke-width="2" opacity=".7"/>
+            <line x1="300" y1="210" x2="300" y2="395" stroke="#3B82F6" stroke-width="2" opacity=".7"/>
+            <line x1="510" y1="210" x2="510" y2="395" stroke="#3B82F6" stroke-width="2" opacity=".7"/>
+            <!-- Drain pipes green -->
+            <line x1="120" y1="275" x2="235" y2="275" stroke="#22C55E" stroke-width="2" opacity=".7"/>
+            <line x1="270" y1="275" x2="370" y2="275" stroke="#22C55E" stroke-width="2" opacity=".7"/>
+            <!-- Valve symbols -->
+            <g transform="translate(145,206)"><circle cx="0" cy="0" r="8" fill="rgba(59,130,246,.2)" stroke="#3B82F6" stroke-width="1.5"/><line x1="-5" y1="-5" x2="5" y2="5" stroke="#3B82F6" stroke-width="1.5"/><line x1="5" y1="-5" x2="-5" y2="5" stroke="#3B82F6" stroke-width="1.5"/></g>
+            <g transform="translate(295,206)"><circle cx="0" cy="0" r="8" fill="rgba(59,130,246,.2)" stroke="#3B82F6" stroke-width="1.5"/><line x1="-5" y1="-5" x2="5" y2="5" stroke="#3B82F6" stroke-width="1.5"/><line x1="5" y1="-5" x2="-5" y2="5" stroke="#3B82F6" stroke-width="1.5"/></g>
+            <g transform="translate(505,206)"><circle cx="0" cy="0" r="8" fill="rgba(59,130,246,.2)" stroke="#3B82F6" stroke-width="1.5"/><line x1="-5" y1="-5" x2="5" y2="5" stroke="#3B82F6" stroke-width="1.5"/><line x1="5" y1="-5" x2="-5" y2="5" stroke="#3B82F6" stroke-width="1.5"/></g>
+            <!-- Drain floor -->
+            <g transform="translate(145,388)"><rect x="-7" y="-7" width="14" height="14" fill="rgba(34,197,94,.2)" stroke="#22C55E" stroke-width="1.5"/><line x1="-4" y1="0" x2="4" y2="0" stroke="#22C55E"/><line x1="0" y1="-4" x2="0" y2="4" stroke="#22C55E"/></g>
+            <g transform="translate(295,388)"><rect x="-7" y="-7" width="14" height="14" fill="rgba(34,197,94,.2)" stroke="#22C55E" stroke-width="1.5"/><line x1="-4" y1="0" x2="4" y2="0" stroke="#22C55E"/><line x1="0" y1="-4" x2="0" y2="4" stroke="#22C55E"/></g>
+            <!-- Orange markup -->
+            <rect x="108" y="255" width="75" height="38" fill="none" stroke="#FF6B35" stroke-width="2" stroke-dasharray="6,3" rx="4"/>
+            <text x="116" y="270" font-size="8.5" fill="#FF6B35" font-family="Inter,sans-serif" font-weight="600">Kontroller</text>
+            <text x="116" y="283" font-size="8.5" fill="#FF6B35" font-family="Inter,sans-serif">sluk pos.</text>
+            <!-- Measurement -->
+            <line x1="75" y1="425" x2="235" y2="425" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="75" y1="420" x2="75" y2="430" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="235" y1="420" x2="235" y2="430" stroke="#F59E0B" stroke-width="1.5"/>
+            <text x="155" y="440" font-size="8.5" text-anchor="middle" fill="#F59E0B" font-family="Inter,sans-serif" font-weight="600">8,5 m</text>
+            <text x="200" y="207" font-size="7.5" fill="#3B82F6" font-family="Inter,sans-serif">Ø22</text>
+            <text x="400" y="207" font-size="7.5" fill="#3B82F6" font-family="Inter,sans-serif">Ø22</text>
+            <text x="165" y="270" font-size="7.5" fill="#22C55E" font-family="Inter,sans-serif">DN100</text>
+            <!-- North -->
+            <g transform="translate(600,70)"><circle cx="0" cy="0" r="17" fill="white" stroke="#94a3b8" stroke-width="1"/><polygon points="0,-12 -5,5 0,2 5,5" fill="#374151"/><polygon points="0,12 -5,-5 0,-2 5,-5" fill="#94a3b8"/><text x="0" y="-14" font-size="7" text-anchor="middle" fill="#374151" font-family="Inter,sans-serif" font-weight="700">N</text></g>
+            <!-- Legend -->
+            <rect x="430" y="480" width="195" height="145" fill="white" stroke="#d1d5db" stroke-width="1" rx="4"/>
+            <text x="445" y="498" font-size="9.5" fill="#374151" font-family="Inter,sans-serif" font-weight="700">TEGNFORKLARING</text>
+            <line x1="445" y1="505" x2="610" y2="505" stroke="#3B82F6" stroke-width="2"/><text x="460" y="517" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Vannledning</text>
+            <line x1="445" y1="527" x2="610" y2="527" stroke="#22C55E" stroke-width="2"/><text x="460" y="539" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Avløpsledning</text>
+            <circle cx="452" cy="553" r="5" fill="rgba(59,130,246,.2)" stroke="#3B82F6" stroke-width="1"/><text x="462" y="557" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Ventil</text>
+            <rect x="447" y="564" width="10" height="10" fill="rgba(34,197,94,.2)" stroke="#22C55E" stroke-width="1"/><text x="462" y="573" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Sluk</text>
+            <line x1="445" y1="585" x2="460" y2="585" stroke="#FF6B35" stroke-width="1.5" stroke-dasharray="4,2"/><text x="465" y="589" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Merknad</text>
+            <line x1="445" y1="600" x2="460" y2="600" stroke="#F59E0B" stroke-width="1.5"/><text x="465" y="604" font-size="8.5" fill="#374151" font-family="Inter,sans-serif">Målsetting</text>
+            <text x="445" y="617" font-size="7.5" fill="#94a3b8" font-family="Inter,sans-serif">AI-registrert: ●</text>
+          </svg>
+          <!-- Interactive markers -->
+          <div class="vm v" style="width:22px;height:22px;left:135px;top:196px" title="Ventil DN25 — Kaldtvann" onclick="markerClick('Ventil DN25 | Pos: P1-X145-Y210 | Status: OK | Montør: Ole Hansen')">V</div>
+          <div class="vm v" style="width:22px;height:22px;left:285px;top:196px" title="Ventil DN25" onclick="markerClick('Ventil DN25 | Pos: P1-X295-Y210 | Status: OK')">V</div>
+          <div class="vm v" style="width:22px;height:22px;left:495px;top:196px" title="Ventil DN25 — Varmtvann" onclick="markerClick('Ventil DN25 | Pos: P1-X505-Y210 | Status: OK')">V</div>
+          <div class="vm s" style="width:21px;height:21px;left:136px;top:379px" title="Sluk DN100" onclick="markerClick('Sluk DN100 | Pos: P1-X145-Y388 | Status: OK | Montør: Marie Nilsen')">S</div>
+          <div class="vm s" style="width:21px;height:21px;left:285px;top:379px" title="Sluk DN100 — sjekk pos." onclick="markerClick('Sluk DN100 | Pos: P1-X295-Y388 | ⚠️ Sjekk posisjon')">S</div>
+          <div class="vm" style="width:21px;height:21px;left:108px;top:96px" title="AI: Armatur" onclick="markerClick('AI-oppdaget: Armatur | Konfidensgrad: 78% | Ikke registrert i masseuttak')">A</div>
+        </div>
+      </div>
+      <!-- Right panel -->
+      <div class="pdf-rp">
+        <div class="ptabs">
+          <div class="ptab on" onclick="setPTab(this)">Lag</div>
+          <div class="ptab" onclick="setPTab(this)">Masser</div>
+          <div class="ptab" onclick="setPTab(this)">Komm.</div>
+        </div>
+        <div class="pcontent">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:7px;padding:7px;background:var(--bg);border-radius:6px"><input type="checkbox" checked><span style="width:12px;height:12px;border-radius:2px;background:#3B82F6;display:inline-block"></span><span style="font-size:12px;flex:1">Vannledninger</span></div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px;background:var(--bg);border-radius:6px"><input type="checkbox" checked><span style="width:12px;height:12px;border-radius:2px;background:#22C55E;display:inline-block"></span><span style="font-size:12px;flex:1">Avløp</span></div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px;background:var(--bg);border-radius:6px"><input type="checkbox" checked><span style="width:12px;height:12px;border-radius:2px;background:#F59E0B;display:inline-block"></span><span style="font-size:12px;flex:1">Varme</span></div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px;background:var(--bg);border-radius:6px"><input type="checkbox" checked><span style="width:12px;height:12px;border-radius:2px;background:#FF6B35;display:inline-block"></span><span style="font-size:12px;flex:1">Merknader</span></div>
+            <div style="display:flex;align-items:center;gap:7px;padding:7px;background:rgba(59,130,246,.05);border-radius:6px;border:1px solid rgba(59,130,246,.2)"><span style="font-size:10px">🤖</span><span style="width:12px;height:12px;border-radius:2px;background:#8B5CF6;display:inline-block"></span><span style="font-size:12px;flex:1">AI-oppdaget</span><span class="badge b-b" style="font-size:10px;padding:1px 6px">3</span></div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="sh-t" style="margin-bottom:9px">Hurtig masseuttak</div>
+            <div class="qty-item"><div class="qdot" style="background:#3B82F6"></div><div class="qname">Rør Ø22</div><div class="qcount">34.5</div><div class="qunit">m</div></div>
+            <div class="qty-item"><div class="qdot" style="background:#22C55E"></div><div class="qname">Rør DN100</div><div class="qcount">12.0</div><div class="qunit">m</div></div>
+            <div class="qty-item"><div class="qdot" style="background:#3B82F6"></div><div class="qname">Ventiler DN25</div><div class="qcount">3</div><div class="qunit">stk</div></div>
+            <div class="qty-item"><div class="qdot" style="background:#22C55E"></div><div class="qname">Sluk DN100</div><div class="qcount">2</div><div class="qunit">stk</div></div>
+            <button class="tbtn" style="width:100%;margin-top:8px;justify-content:center;font-size:12px" onclick="nav('masseuttak')">📊 Fullt masseuttak</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MASSEUTTAK ====== -->
+<div class="view" id="v-masseuttak">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">📏 Masseuttak — Storfjord Skole</span><div style="display:flex;gap:8px"><button class="tbtn out" onclick="openModal('importModal')">+ Legg til</button><button class="tbtn" onclick="showToast('📗 Eksportert til Excel')">📤 Excel</button></div></div>
+  <div class="kpi-grid mb">
+    <div class="kpi"><div class="kpi-lbl">Total rør</div><div class="kpi-val">342m</div><div class="kpi-sub">alle dimensjoner</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">Ventiler</div><div class="kpi-val">47</div><div class="kpi-sub">stk totalt</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Sluk</div><div class="kpi-val">23</div><div class="kpi-sub">stk totalt</div></div>
+    <div class="kpi yl"><div class="kpi-lbl">Est. materialer</div><div class="kpi-val">284k</div><div class="kpi-sub">kr</div></div>
+  </div>
+  <div class="card mb">
+    <div class="sh"><span class="sh-t">Rørstrekk</span><button class="tbtn out" style="padding:5px 11px;font-size:12px" onclick="nav('pdf')">🔍 Se i tegning</button></div>
+    <table class="tbl"><thead><tr><th>Beskrivelse</th><th>Dim.</th><th>Materiale</th><th>Plan 1</th><th>Plan 2</th><th>Plan 3</th><th>Totalt</th><th>Enh.</th><th>Kilde</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Kobberrør kaldtvann</strong></td><td>Ø22</td><td>Kobber</td><td>42.5</td><td>68.0</td><td>31.5</td><td><strong>142.0</strong></td><td>m</td><td><span class="badge b-g">Tegning</span></td></tr>
+      <tr><td><strong>Kobberrør varmtvann</strong></td><td>Ø22</td><td>Kobber</td><td>38.0</td><td>62.0</td><td>28.0</td><td><strong>128.0</strong></td><td>m</td><td><span class="badge b-g">Tegning</span></td></tr>
+      <tr><td><strong>Avløpsrør</strong></td><td>DN100</td><td>PP</td><td>24.0</td><td>32.0</td><td>16.0</td><td><strong>72.0</strong></td><td>m</td><td><span class="badge b-b">AI</span></td></tr>
+      <tr class="tr-tot"><td colspan="6"><strong>Sum rør</strong></td><td><strong>342.0 m</strong></td><td colspan="2"></td></tr>
+    </tbody></table>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="sh"><span class="sh-t">Punktkomponenter</span><button class="tbtn out" style="padding:4px 10px;font-size:11px" onclick="showToast('✓ Ny type lagt til')">+ Ny type</button></div>
+      <table class="tbl"><thead><tr><th>Komponent</th><th>Type</th><th>Antall</th><th>Enh.</th><th>AI</th></tr></thead>
+      <tbody>
+        <tr><td>Ventil</td><td>DN25</td><td><strong>47</strong></td><td>stk</td><td>✓</td></tr>
+        <tr><td>Sluk</td><td>DN100</td><td><strong>23</strong></td><td>stk</td><td>✓</td></tr>
+        <tr><td>Armatur</td><td>Etg. B</td><td><strong>12</strong></td><td>stk</td><td></td></tr>
+        <tr><td>Rørdeler</td><td>Ø22</td><td><strong>86</strong></td><td>stk</td><td>✓</td></tr>
+        <tr><td>Isolasjon</td><td>13mm</td><td><strong>342</strong></td><td>m</td><td></td></tr>
+        <tr class="tr-sum"><td colspan="4">Est. materialkost</td><td><strong>284 000 kr</strong></td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="sh-t" style="margin-bottom:10px">🤖 AI-forslag</div>
+      <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:13px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:5px">Manglende komponenter oppdaget</div>
+        <div style="font-size:12px;line-height:1.6">· <strong>14 rørfester</strong> ikke registrert (c/c 1.5m)<br>· <strong>2 ekspansjonsbøy</strong> antatt nødvendig<br>· Sjekk isolasjon kaldtvann Plan 3</div>
+        <button class="tbtn" style="margin-top:9px;font-size:12px;padding:5px 13px" onclick="showToast('✓ AI-forslag lagt til i masseuttak')">✓ Godta og legg til</button>
+      </div>
+      <div class="sh-t" style="margin-bottom:8px;font-size:13px">Eksporter</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="tbtn" style="justify-content:center;background:#16a34a" onclick="showToast('📗 Eksportert til Excel')">📗 Eksporter Excel</button>
+        <button class="tbtn" style="justify-content:center;background:var(--navy)" onclick="showToast('📕 Eksportert til PDF')">📕 Eksporter PDF</button>
+        <button class="tbtn" style="justify-content:center;background:var(--mid)" onclick="showToast('📄 Eksportert til CSV')">📄 Eksporter CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== AVVIK ====== -->
+<div class="view" id="v-avvik">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">⚠️ Avvikslogg</span><button class="tbtn" onclick="openModal('newAvvikModal')">+ Nytt avvik</button></div>
+  <div class="kpi-grid mb">
+    <div class="kpi yl"><div class="kpi-lbl">Åpne</div><div class="kpi-val">3</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">Lukket</div><div class="kpi-val">14</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Under arbeid</div><div class="kpi-val">2</div></div>
+    <div class="kpi" style="--orange:var(--red)"><div class="kpi-lbl">Forfalt</div><div class="kpi-val" style="color:var(--red)">1</div></div>
+  </div>
+  <div class="av-card" onclick="openModal('avvikDetailModal')">
+    <div class="av-hdr"><div><div class="av-id">AVV-2024-018</div><div class="av-title">Rørlekkasje ved korridor B — teknisk rom</div><div class="av-meta"><span>📍 Plan 1 · Korridor B</span><span>👤 Ole Hansen</span><span>📅 Frist: 22. nov 2024</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="prio ph">KRITISK</span><span class="badge b-y">Åpen</span></div></div>
+  </div>
+  <div class="av-card">
+    <div class="av-hdr"><div><div class="av-id">AVV-2024-019</div><div class="av-title">Manglende isolasjon — varmtvannsrør plan 2</div><div class="av-meta"><span>📍 Plan 2 · Teknisk sjakt</span><span>👤 Marie Nilsen</span><span>📅 Frist: 30. nov 2024</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="prio pm">MIDDELS</span><span class="badge b-b">Under arbeid</span></div></div>
+  </div>
+  <div class="av-card">
+    <div class="av-hdr"><div><div class="av-id">AVV-2024-020</div><div class="av-title">Ventil DN25 plassert feil — rom 102</div><div class="av-meta"><span>📍 Plan 1 · Rom 102</span><span>👤 Kristoffer Larsen</span><span>📅 Frist: 5. des 2024</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="prio pl">LAV</span><span class="badge b-y">Åpen</span></div></div>
+  </div>
+</div>
+
+<!-- ====== FREMDRIFT ====== -->
+<div class="view" id="v-fremdrift">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">📅 Fremdrift — Storfjord Skole</span><button class="tbtn out" onclick="showToast('📤 Gantt eksportert')">📤 Eksporter</button></div>
+  <div class="card mb">
+    <div class="sh"><span class="sh-t">Milepæler</span></div>
+    <div class="ms"><div class="ms-ico ms-d">✅</div><div><div class="ms-name">Prosjektoppstart og planlegging</div><div class="ms-date">1. august 2024 — Fullført</div></div><div class="ms-pct" style="color:var(--green)">100%</div></div>
+    <div class="ms"><div class="ms-ico ms-d">✅</div><div><div class="ms-name">Graving og fundamentarbeider</div><div class="ms-date">15. september 2024 — Fullført</div></div><div class="ms-pct" style="color:var(--green)">100%</div></div>
+    <div class="ms"><div class="ms-ico ms-a">🔵</div><div><div class="ms-name">Innvendige røranlegg Plan 1 og 2</div><div class="ms-date">30. november 2024 — Pågår</div></div><div class="ms-pct" style="color:var(--blue)">68%</div></div>
+    <div class="ms"><div class="ms-ico ms-p">⬜</div><div><div class="ms-name">Sanitærutstyr og armatur</div><div class="ms-date">20. januar 2025 — Ikke startet</div></div><div class="ms-pct" style="color:var(--soft)">0%</div></div>
+    <div class="ms"><div class="ms-ico ms-p">⬜</div><div><div class="ms-name">Testing og idriftsettelse</div><div class="ms-date">28. februar 2025 — Ikke startet</div></div><div class="ms-pct" style="color:var(--soft)">0%</div></div>
+    <div class="ms"><div class="ms-ico ms-p">⬜</div><div><div class="ms-name">Overlevering og FDV</div><div class="ms-date">15. mars 2025 — Ikke startet</div></div><div class="ms-pct" style="color:var(--soft)">0%</div></div>
+  </div>
+  <div class="card">
+    <div class="sh"><span class="sh-t">Gantt-oversikt</span></div>
+    <div style="overflow-x:auto"><div style="min-width:560px">
+      <div style="display:flex;margin-left:145px;margin-bottom:6px"><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Aug</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Sep</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Okt</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Nov</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Des</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Jan</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Feb</div><div style="flex:1;text-align:center;font-size:9.5px;color:var(--soft);border-left:1px solid var(--border)">Mar</div></div>
+      <div class="gr"><div class="gl">Planlegging</div><div class="ga"><div class="gb" style="left:0;width:12.5%;background:var(--green)">OK</div></div></div>
+      <div class="gr"><div class="gl">Graving</div><div class="ga"><div class="gb" style="left:12.5%;width:12.5%;background:var(--green)">OK</div></div></div>
+      <div class="gr"><div class="gl">Røranlegg P1+P2</div><div class="ga"><div class="gb" style="left:25%;width:37.5%;background:var(--orange)">68%</div></div></div>
+      <div class="gr"><div class="gl">Sanitærutstyr</div><div class="ga"><div class="gb" style="left:62.5%;width:25%;background:#94a3b8;color:var(--text)">Planlagt</div></div></div>
+      <div class="gr"><div class="gl">Testing</div><div class="ga"><div class="gb" style="left:75%;width:12.5%;background:#94a3b8;color:var(--text)">Planlagt</div></div></div>
+      <div class="gr"><div class="gl">Overlevering</div><div class="ga"><div class="gb" style="left:87.5%;width:12.5%;background:#94a3b8;color:var(--text)">Planlagt</div></div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ====== KALKYLE ====== -->
+<div class="view" id="v-kalkyle">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">💰 Kalkyle — Storfjord Skole</span><div style="display:flex;gap:8px"><button class="tbtn out" onclick="showToast('📥 Importer Excel')">📥 Import</button><button class="tbtn" onclick="showToast('📤 Tilbud eksportert')">📤 Eksporter tilbud</button></div></div>
+  <div class="kpi-grid mb">
+    <div class="kpi gr"><div class="kpi-lbl">Materialkost</div><div class="kpi-val">284k</div><div class="kpi-sub">kr</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Arbeidskost</div><div class="kpi-val">412k</div><div class="kpi-sub">kr · 1648 timer</div></div>
+    <div class="kpi"><div class="kpi-lbl">Påslag 22%</div><div class="kpi-val">152k</div><div class="kpi-sub">kr</div></div>
+    <div class="kpi yl"><div class="kpi-lbl">Totalsum</div><div class="kpi-val">848k</div><div class="kpi-sub">kr eks. mva</div></div>
+  </div>
+  <div class="card">
+    <div class="sh"><span class="sh-t">Kalkyleoversikt</span></div>
+    <table class="tbl"><thead><tr><th>Post</th><th>Beskrivelse</th><th>Mengde</th><th>Enh.</th><th>Enhetspris</th><th>Kostnad</th><th>Påslag</th><th>Kundepris</th></tr></thead>
+    <tbody>
+      <tr><td>1.0</td><td><strong>MATERIALER</strong></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>1.1</td><td>Kobberrør Ø22</td><td>342</td><td>m</td><td>285 kr</td><td>97 470 kr</td><td>20%</td><td>116 964 kr</td></tr>
+      <tr><td>1.2</td><td>Avløpsrør DN100 PP</td><td>72</td><td>m</td><td>380 kr</td><td>27 360 kr</td><td>20%</td><td>32 832 kr</td></tr>
+      <tr><td>1.3</td><td>Ventiler DN25</td><td>47</td><td>stk</td><td>890 kr</td><td>41 830 kr</td><td>25%</td><td>52 288 kr</td></tr>
+      <tr><td>1.4</td><td>Sluk DN100</td><td>23</td><td>stk</td><td>1 240 kr</td><td>28 520 kr</td><td>25%</td><td>35 650 kr</td></tr>
+      <tr><td>1.5</td><td>Armatur / annet</td><td>1</td><td>RS</td><td>88 820 kr</td><td>88 820 kr</td><td>22%</td><td>108 360 kr</td></tr>
+      <tr class="tr-tot"><td colspan="5"><strong>Sum materialer</strong></td><td><strong>284 000 kr</strong></td><td></td><td><strong>346 094 kr</strong></td></tr>
+      <tr><td>2.0</td><td><strong>ARBEID</strong></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>2.1</td><td>Prosjektleder</td><td>160</td><td>t</td><td>820 kr</td><td>131 200 kr</td><td>10%</td><td>144 320 kr</td></tr>
+      <tr><td>2.2</td><td>Fagarbeider</td><td>1200</td><td>t</td><td>680 kr</td><td>816 000 kr</td><td>10%</td><td>897 600 kr</td></tr>
+      <tr><td>2.3</td><td>Lærling</td><td>288</td><td>t</td><td>420 kr</td><td>120 960 kr</td><td>10%</td><td>133 056 kr</td></tr>
+      <tr class="tr-tot"><td colspan="5"><strong>Sum arbeid</strong></td><td><strong>412 000 kr</strong></td><td></td><td><strong>452 820 kr</strong></td></tr>
+      <tr class="tr-sum"><td colspan="5"><strong>PROSJEKTSUM EKS. MVA</strong></td><td><strong>696 000 kr</strong></td><td></td><td><strong>848 000 kr</strong></td></tr>
+    </tbody></table>
+    <div style="text-align:right;margin-top:11px;font-size:13px;color:var(--soft)">MVA 25%: <strong>212 000 kr</strong> &nbsp;|&nbsp; <span style="font-size:15px;font-weight:800;color:var(--navy)">Total ink. mva: 1 060 000 kr</span></div>
+  </div>
+</div>
+
+<!-- ====== AI ====== -->
+<div class="view" id="v-ai" style="margin:-22px">
+  <div class="ai-wrap">
+    <div class="ai-hdr">
+      <div class="ai-badge">AI Aktiv</div>
+      <div class="ai-title">VVS AI-assistent</div>
+      <div class="ai-sub">Tegningsanalyse · Symbolgjenkjenning · Masseuttak · Prosjektrådgivning</div>
+    </div>
+    <div class="ai-msgs" id="aiMsgs">
+      <div class="msg ai"><div class="mav ai">🤖</div><div class="mbubble">Hei, Kristoffer! Jeg har analysert <strong>Storfjord Skole</strong>.<br><br>📐 <strong>3 plantegninger</strong> lastet<br>💧 <strong>47 ventiler</strong> og <strong>23 sluk</strong> oppdaget<br>📏 Estimert <strong>342m rør</strong> i 3 dimensjoner<br>⚠️ <strong>3 mulige mangler</strong> — vil du se dem?</div></div>
+      <div class="msg usr"><div class="mav usr">KL</div><div class="mbubble">Ja, vis meg hva som mangler</div></div>
+      <div class="msg ai"><div class="mav ai">🤖</div><div class="mbubble">Fant følgende basert på tegningsanalyse og NS-EN 806:<br><br><strong>1. Rørfester mangler</strong> — ca. 14 fester ekstra c/c 1,5m på Plan 2.<br><strong>2. Ekspansjonsbøy</strong> — 38m rørstrekk i Plan 2 bør ha 2 stk.<br><strong>3. Isolasjon kaldtvann</strong> — Plan 3 sjakt ikke markert som isolert.<br><br>Vil jeg legge disse til i masseuttaket?</div></div>
+    </div>
+    <div class="ai-chips">
+      <div class="chip" onclick="sendChip(this)">Analyser alle tegninger</div>
+      <div class="chip" onclick="sendChip(this)">Sammenlign revisjoner</div>
+      <div class="chip" onclick="sendChip(this)">Generer prosjektrapport</div>
+      <div class="chip" onclick="sendChip(this)">Finn alle ventiler</div>
+      <div class="chip" onclick="sendChip(this)">Beregn materialbehov</div>
+    </div>
+    <div class="ai-inp-row">
+      <input class="ai-inp" id="aiInput" placeholder="Still et spørsmål om prosjektet eller tegningene..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="ai-send" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PROSJEKTER ====== -->
+<div class="view" id="v-prosjekter">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">🏗️ Alle prosjekter</span><button class="tbtn" onclick="openModal('newProjModal')">+ Nytt prosjekt</button></div>
+  <div class="g3 mb">
+    <div class="card" style="cursor:pointer;border-top:4px solid var(--orange)" onclick="nav('prosjekt')"><div style="font-size:22px;margin-bottom:7px">🏫</div><div style="font-size:14px;font-weight:700">Storfjord Skole</div><div style="font-size:11px;color:var(--soft);margin-top:2px">NV-2024-047 · Tromsø</div><div class="pbar" style="margin-top:9px"><div class="pfill" style="width:68%"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:12px"><span style="color:var(--soft)">68%</span><span class="badge b-g">Aktiv</span></div></div>
+    <div class="card" style="cursor:pointer;border-top:4px solid var(--blue)"><div style="font-size:22px;margin-bottom:7px">🏠</div><div style="font-size:14px;font-weight:700">Boligfelt Bjørndalen</div><div style="font-size:11px;color:var(--soft);margin-top:2px">NV-2024-051 · Alta</div><div class="pbar" style="margin-top:9px"><div class="pfill g" style="width:32%"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:12px"><span style="color:var(--soft)">32%</span><span class="badge b-b">Tidlig</span></div></div>
+    <div class="card" style="cursor:pointer;border-top:4px solid var(--green)"><div style="font-size:22px;margin-bottom:7px">🏭</div><div style="font-size:14px;font-weight:700">Harstad Industribygg</div><div style="font-size:11px;color:var(--soft);margin-top:2px">NV-2024-039 · Harstad</div><div class="pbar" style="margin-top:9px"><div class="pfill g" style="width:91%"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:12px"><span style="color:var(--soft)">91%</span><span class="badge b-y">Avslutning</span></div></div>
+    <div class="card" style="cursor:pointer;border-top:4px solid var(--navy)"><div style="font-size:22px;margin-bottom:7px">🏪</div><div style="font-size:14px;font-weight:700">Kjøpesenter Tromsø</div><div style="font-size:11px;color:var(--soft);margin-top:2px">NV-2024-058 · Tromsø</div><div class="pbar" style="margin-top:9px"><div class="pfill" style="width:12%"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:12px"><span style="color:var(--soft)">12%</span><span class="badge b-b">Planl.</span></div></div>
+    <div class="card" style="cursor:pointer;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;min-height:130px" onclick="openModal('newProjModal')"><div style="font-size:26px;color:var(--border)">＋</div><div style="font-size:13px;color:var(--soft);font-weight:600">Nytt prosjekt</div></div>
+  </div>
+</div>
+
+<!-- ====== PROSJEKT ====== -->
+<div class="view" id="v-prosjekt">
+  <div class="sh" style="margin-bottom:16px">
+    <div><div style="font-size:16px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:9px">🏫 Storfjord Barneskole — VVS <span class="badge b-g">Aktiv</span></div><div style="font-size:12px;color:var(--soft);margin-top:2px">NV-2024-047 · Tromsø kommune · Byggherre: Tromsø Eiendom KF</div></div>
+    <div style="display:flex;gap:8px"><button class="tbtn out" onclick="nav('pdf')">📐 Tegninger</button><button class="tbtn" onclick="nav('kalkyle')">💰 Kalkyle</button></div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="card mb">
+        <div class="sh"><span class="sh-t">Prosjektinfo</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;font-size:13px">
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Prosjektnummer</div><div style="font-weight:600">NV-2024-047</div></div>
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Kunde</div><div style="font-weight:600">Tromsø Eiendom KF</div></div>
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Adresse</div><div style="font-weight:600">Storfjordvn. 14, Tromsø</div></div>
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Kontraktssum</div><div style="font-weight:600">848 000 kr</div></div>
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Oppstart</div><div style="font-weight:600">1. august 2024</div></div>
+          <div><div style="color:var(--soft);font-size:11px;margin-bottom:1px">Ferdigstillelse</div><div style="font-weight:600">15. mars 2025</div></div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="sh"><span class="sh-t">Team</span><button class="tbtn out" style="padding:4px 10px;font-size:11px">+ Legg til</button></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:9px"><div class="u-av" style="width:30px;height:30px;font-size:11px">KL</div><div><div style="font-size:13px;font-weight:600">Kristoffer Larsen</div><div style="font-size:11px;color:var(--soft)">Prosjektleder</div></div><span class="badge b-g" style="margin-left:auto">Aktiv</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><div class="u-av" style="width:30px;height:30px;font-size:11px;background:#1e40af">OH</div><div><div style="font-size:13px;font-weight:600">Ole Hansen</div><div style="font-size:11px;color:var(--soft)">Formann</div></div><span class="badge b-g" style="margin-left:auto">Aktiv</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><div class="u-av" style="width:30px;height:30px;font-size:11px;background:#7c3aed">MN</div><div><div style="font-size:13px;font-weight:600">Marie Nilsen</div><div style="font-size:11px;color:var(--soft)">Montør</div></div><span class="badge b-g" style="margin-left:auto">Aktiv</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card mb">
+        <div class="sh"><span class="sh-t">Tegninger (4)</span><button class="tbtn out" style="padding:4px 10px;font-size:11px" onclick="nav('pdf')">📐 Åpne</button></div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:9px;padding:8px;background:var(--bg);border-radius:6px;cursor:pointer" onclick="nav('pdf')"><span style="font-size:17px">📄</span><div><div style="font-size:12px;font-weight:600">VVS_Plan1_rev03.pdf</div><div style="font-size:11px;color:var(--soft)">Plan 1 · Rev 03 · 2024-11-15</div></div><span class="badge b-g" style="margin-left:auto">Rev 03</span></div>
+          <div style="display:flex;align-items:center;gap:9px;padding:8px;background:var(--bg);border-radius:6px;cursor:pointer" onclick="nav('pdf')"><span style="font-size:17px">📄</span><div><div style="font-size:12px;font-weight:600">VVS_Plan2_rev02.pdf</div><div style="font-size:11px;color:var(--soft)">Plan 2 · Rev 02 · 2024-10-30</div></div><span class="badge b-b" style="margin-left:auto">Rev 02</span></div>
+          <div style="display:flex;align-items:center;gap:9px;padding:8px;background:var(--bg);border-radius:6px;cursor:pointer" onclick="nav('pdf')"><span style="font-size:17px">📄</span><div><div style="font-size:12px;font-weight:600">VVS_Sjakt_rev01.pdf</div><div style="font-size:11px;color:var(--soft)">Sjakt · Rev 01 · 2024-09-12</div></div><span class="badge b-y" style="margin-left:auto">Ny rev?</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sh"><span class="sh-t">Åpne avvik</span><span class="sh-a" onclick="nav('avvik')">Se alle →</span></div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;border-left:3px solid var(--red);background:#FEF2F2;cursor:pointer" onclick="nav('avvik')"><span>⚠️</span><div style="flex:1"><div style="font-size:12px;font-weight:600">Rørlekkasje — Korridor B</div><div style="font-size:11px;color:var(--soft)">Frist: 22. nov 2024</div></div><span class="prio ph">KRITISK</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;border-left:3px solid var(--yellow);background:#FFFBEB;cursor:pointer" onclick="nav('avvik')"><span>⚠️</span><div style="flex:1"><div style="font-size:12px;font-weight:600">Manglende isolasjon — Plan 2</div><div style="font-size:11px;color:var(--soft)">Frist: 30. nov 2024</div></div><span class="prio pm">MIDDELS</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== BEFARING ====== -->
+<div class="view" id="v-befaring">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">🔍 Befaring & Sjekklister</span><button class="tbtn" onclick="showToast('✓ Ny befaring opprettet')">+ Ny befaring</button></div>
+  <div class="g3">
+    <div class="card" style="cursor:pointer;text-align:center;padding:22px" onclick="openModal('befaringModal')"><div style="font-size:30px">✅</div><div style="font-size:14px;font-weight:700;margin-top:7px">Sluttkontroll</div><div style="font-size:12px;color:var(--soft);margin-top:3px">Kvalitetssikring</div><span class="badge b-g" style="margin-top:11px;display:inline-block">Mal klar</span></div>
+    <div class="card" style="cursor:pointer;text-align:center;padding:22px" onclick="openModal('befaringModal')"><div style="font-size:30px">📋</div><div style="font-size:14px;font-weight:700;margin-top:7px">Mangelliste</div><div style="font-size:12px;color:var(--soft);margin-top:3px">Registrer mangler</div><span class="badge b-b" style="margin-top:11px;display:inline-block">3 aktive</span></div>
+    <div class="card" style="cursor:pointer;text-align:center;padding:22px" onclick="openModal('befaringModal')"><div style="font-size:30px">🤝</div><div style="font-size:14px;font-weight:700;margin-top:7px">Overlevering</div><div style="font-size:12px;color:var(--soft);margin-top:3px">FDV-dokumentasjon</div><span class="badge b-y" style="margin-top:11px;display:inline-block">Ikke startet</span></div>
+  </div>
+</div>
+
+<!-- ====== TEAM ====== -->
+<div class="view" id="v-team">
+  <div class="sh" style="margin-bottom:16px"><span style="font-size:17px;font-weight:800;color:var(--navy)">👥 Team & Brukere</span><button class="tbtn" onclick="showToast('📧 Invitasjon sendt')">+ Inviter</button></div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Navn</th><th>Rolle</th><th>Prosjekter</th><th>Status</th><th>Sist aktiv</th></tr></thead>
+    <tbody>
+      <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="u-av" style="width:28px;height:28px;font-size:10px">KL</div>Kristoffer Larsen</div></td><td>Prosjektleder</td><td>4</td><td><span class="badge b-g">Aktiv</span></td><td>Nå</td></tr>
+      <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="u-av" style="width:28px;height:28px;font-size:10px;background:#1e40af">OH</div>Ole Hansen</div></td><td>Formann</td><td>2</td><td><span class="badge b-g">Aktiv</span></td><td>3 min siden</td></tr>
+      <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="u-av" style="width:28px;height:28px;font-size:10px;background:#7c3aed">MN</div>Marie Nilsen</div></td><td>Montør</td><td>1</td><td><span class="badge b-g">Aktiv</span></td><td>41 min siden</td></tr>
+      <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="u-av" style="width:28px;height:28px;font-size:10px;background:#be185d">AS</div>Anders Solberg</div></td><td>Montør</td><td>3</td><td><span class="badge b-g">Aktiv</span></td><td>I går</td></tr>
+      <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="u-av" style="width:28px;height:28px;font-size:10px;background:#94a3b8">TK</div>Tromsø Eiendom</div></td><td>Kunde (lesetilgang)</td><td>1</td><td><span class="badge b-b">Invitert</span></td><td>Aldri</td></tr>
+    </tbody></table>
+  </div>
+</div>
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- NOTIF PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="np-hdr">Varsler <span class="np-clear" onclick="clearNotifs()">Merk alle lest</span></div>
+  <div class="np-item"><div class="np-title">⚠️ Avvik — Rørlekkasje (KRITISK)</div><div class="np-sub">Storfjord Skole · Korridor B</div><div class="np-time">41 min siden</div></div>
+  <div class="np-item"><div class="np-title">🤖 AI-analyse fullført</div><div class="np-sub">47 ventiler og 23 sluk oppdaget</div><div class="np-time">2 timer siden</div></div>
+  <div class="np-item"><div class="np-title">📄 Ny tegningsrevisjon</div><div class="np-sub">VVS_Plan3_rev02.pdf klar</div><div class="np-time">I går 16:24</div></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- COLOR DOT STYLE -->
+<style>.color-dot{width:20px;height:20px;border-radius:50%;background:#FF6B35;border:2px solid #fff;cursor:pointer;transition:transform .15s}.color-dot:hover{transform:scale(1.2)}</style>
+
+<!-- MODALS -->
+<div class="modal-ov" id="importModal" onclick="if(event.target===this)closeModal('importModal')">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-t">📥 Importer PDF-tegning</span><button class="modal-x" onclick="closeModal('importModal')">×</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+        <div style="border:2px solid var(--border);border-radius:8px;padding:13px;text-align:center;cursor:pointer" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'"><div style="font-size:22px">💻</div><div style="font-size:12px;font-weight:600;margin-top:4px">Lokal fil</div></div>
+        <div style="border:2px solid var(--orange);border-radius:8px;padding:13px;text-align:center;cursor:pointer;background:rgba(255,107,53,.05)"><div style="font-size:22px">☁️</div><div style="font-size:12px;font-weight:600;margin-top:4px;color:var(--orange)">OneDrive / SharePoint</div></div>
+        <div style="border:2px solid var(--border);border-radius:8px;padding:13px;text-align:center;cursor:pointer" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'"><div style="font-size:22px">📦</div><div style="font-size:12px;font-weight:600;margin-top:4px">Dropbox</div></div>
+        <div style="border:2px solid var(--border);border-radius:8px;padding:13px;text-align:center;cursor:pointer" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'"><div style="font-size:22px">🔵</div><div style="font-size:12px;font-weight:600;margin-top:4px">Google Drive</div></div>
+      </div>
+      <div class="fr"><label class="fl">Prosjekt</label><select class="fi"><option>Storfjord Skole (NV-2024-047)</option><option>Boligfelt Bjørndalen</option></select></div>
+      <div class="fr"><label class="fl">Tegningstype</label><select class="fi"><option>VVS-plantegning</option><option>Sjakt/vertikaltegning</option><option>Detaljtegning</option></select></div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;background:var(--bg)" onclick="showToast('📄 Fil valgt')"><div style="font-size:24px">📄</div><div style="font-size:13px;font-weight:600;margin-top:7px">Dra og slipp PDF her</div><div style="font-size:12px;color:var(--soft);margin-top:3px">eller klikk · Maks 500 MB</div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('importModal')">Avbryt</button><button class="btn btn-p" onclick="closeModal('importModal');nav('pdf');showToast('✓ PDF lastet opp')">Last opp og åpne</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="newProjModal" onclick="if(event.target===this)closeModal('newProjModal')">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-t">🏗️ Nytt VVS-prosjekt</span><button class="modal-x" onclick="closeModal('newProjModal')">×</button></div>
+    <div class="modal-body">
+      <div class="fr"><label class="fl">Prosjektnavn *</label><input class="fi" placeholder="f.eks. Storfjord Barneskole"></div>
+      <div class="fr2"><div class="fr"><label class="fl">Prosjektnummer</label><input class="fi" placeholder="NV-2024-XXX"></div><div class="fr"><label class="fl">Kontraktssum</label><input class="fi" placeholder="kr eks. mva"></div></div>
+      <div class="fr"><label class="fl">Kunde / Byggherre</label><input class="fi" placeholder="f.eks. Tromsø Eiendom KF"></div>
+      <div class="fr"><label class="fl">Adresse</label><input class="fi" placeholder="Gateadresse, poststed"></div>
+      <div class="fr2"><div class="fr"><label class="fl">Oppstartsdato</label><input class="fi" type="date"></div><div class="fr"><label class="fl">Ferdigstillelse</label><input class="fi" type="date"></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('newProjModal')">Avbryt</button><button class="btn btn-p" onclick="closeModal('newProjModal');nav('prosjekt');showToast('✓ Prosjekt opprettet')">Opprett prosjekt</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="newAvvikModal" onclick="if(event.target===this)closeModal('newAvvikModal')">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-t">⚠️ Registrer avvik</span><button class="modal-x" onclick="closeModal('newAvvikModal')">×</button></div>
+    <div class="modal-body">
+      <div class="fr"><label class="fl">Tittel / Beskrivelse *</label><input class="fi" placeholder="Kort beskrivelse"></div>
+      <div class="fr2"><div class="fr"><label class="fl">Prioritet</label><select class="fi"><option>Kritisk</option><option>Middels</option><option>Lav</option></select></div><div class="fr"><label class="fl">Ansvarlig</label><select class="fi"><option>Ole Hansen</option><option>Marie Nilsen</option><option>Kristoffer Larsen</option></select></div></div>
+      <div class="fr2"><div class="fr"><label class="fl">Frist</label><input class="fi" type="date"></div><div class="fr"><label class="fl">Plassering</label><input class="fi" placeholder="Plan 1 · Korridor B"></div></div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:var(--bg)" onclick="showToast('📸 Kamera åpnet')"><div style="font-size:20px">📸</div><div style="font-size:12px;font-weight:600;margin-top:4px">Ta bilde / legg til fra galleri</div><div style="font-size:11px;color:var(--soft)">GPS-posisjon registreres automatisk</div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('newAvvikModal')">Avbryt</button><button class="btn btn-p" onclick="closeModal('newAvvikModal');showToast('✓ Avvik registrert')">Registrer avvik</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="avvikDetailModal" onclick="if(event.target===this)closeModal('avvikDetailModal')">
+  <div class="modal">
+    <div class="modal-hdr"><div><div style="font-size:10px;color:rgba(255,255,255,.5)">AVV-2024-018</div><span class="modal-t">Rørlekkasje — Korridor B</span></div><button class="modal-x" onclick="closeModal('avvikDetailModal')">×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px"><span class="prio ph">KRITISK</span><span class="badge b-y">Åpen</span><span style="font-size:12px;color:var(--soft)">📅 Frist: 22. nov 2024</span><span style="font-size:12px;color:var(--soft)">👤 Ole Hansen</span></div>
+      <div style="background:var(--bg);border-radius:8px;padding:14px;font-size:13px;line-height:1.6;margin-bottom:14px">Vannlekkasje fra koblingspunkt i teknisk rom, korridor B. Mulig feil på pressfittings. Krever umiddelbar utbedring for å hindre vannskade på etasjeskiller.</div>
+      <div style="background:#FFF5F5;border:1px solid #FEB2B2;border-radius:8px;padding:14px;text-align:center;margin-bottom:14px"><div style="font-size:36px">📸</div><div style="font-size:12px;color:var(--soft);margin-top:3px">lekkasje_korridor_b.jpg</div><div style="font-size:11px;color:var(--soft)">📍 69.6489° N, 18.9553° E</div></div>
+      <div class="fr"><label class="fl">Oppdater status</label><select class="fi"><option>Åpen</option><option>Under arbeid</option><option>Lukket</option></select></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('avvikDetailModal')">Lukk</button><button class="btn btn-p" onclick="closeModal('avvikDetailModal');showToast('✓ Avvik oppdatert')">Lagre endringer</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="befaringModal" onclick="if(event.target===this)closeModal('befaringModal')">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-t">✅ Sluttkontroll — Sjekkliste</span><button class="modal-x" onclick="closeModal('befaringModal')">×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg);border-radius:8px"><input type="checkbox" checked style="width:17px;height:17px"><div><div style="font-size:13px;font-weight:600">Trykktest vannledninger</div><div style="font-size:11px;color:var(--soft)">10 bar · 30 min · NS-EN 806-4</div></div><span class="badge b-g" style="margin-left:auto">OK</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg);border-radius:8px"><input type="checkbox" checked style="width:17px;height:17px"><div><div style="font-size:13px;font-weight:600">Røyktest avløpsanlegg</div><div style="font-size:11px;color:var(--soft)">Alle sluk og toaletter</div></div><span class="badge b-g" style="margin-left:auto">OK</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg);border-radius:8px"><input type="checkbox" style="width:17px;height:17px"><div><div style="font-size:13px;font-weight:600">Ventiler og stengeventiler</div><div style="font-size:11px;color:var(--soft)">Funksjonskontroll alle stoppekraner</div></div><span class="badge b-y" style="margin-left:auto">Venter</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg);border-radius:8px"><input type="checkbox" style="width:17px;height:17px"><div><div style="font-size:13px;font-weight:600">FDV-dokumentasjon komplett</div><div style="font-size:11px;color:var(--soft)">Driftsinstruks, garantier, sluttdok.</div></div><span class="badge b-y" style="margin-left:auto">Venter</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg);border-radius:8px"><input type="checkbox" style="width:17px;height:17px"><div><div style="font-size:13px;font-weight:600">Overlevering til byggherre</div><div style="font-size:11px;color:var(--soft)">Signert protokoll</div></div><span class="badge b-r" style="margin-left:auto">Ikke startet</span></div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('befaringModal')">Lukk</button><button class="btn btn-p" onclick="closeModal('befaringModal');showToast('📤 Overleveringsrapport generert')">📤 Generer rapport</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="markerModal" onclick="if(event.target===this)closeModal('markerModal')">
+  <div class="modal" style="width:380px">
+    <div class="modal-hdr"><span class="modal-t">VVS-komponent</span><button class="modal-x" onclick="closeModal('markerModal')">×</button></div>
+    <div class="modal-body"><div id="markerContent" style="font-size:13px;line-height:1.8;white-space:pre-line"></div></div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('markerModal')">Lukk</button><button class="btn btn-p" onclick="closeModal('markerModal');nav('masseuttak');showToast('✓ Lagt til i masseuttak')">Legg til i masseuttak</button></div>
+  </div>
+</div>
+<script>
+const VIEWS = ['dashboard','pdf','masseuttak','avvik','fremdrift','kalkyle','ai','prosjekter','prosjekt','befaring','team'];
+const TITLES = {dashboard:'Dashboard',pdf:'Tegningsvisning — Plan 1',masseuttak:'Masseuttak',avvik:'Avvikslogg',fremdrift:'Fremdrift',kalkyle:'Kalkyle',ai:'AI-assistent',prosjekter:'Alle prosjekter',prosjekt:'Storfjord Barneskole',befaring:'Befaring',team:'Team'};
+let currentZoom = 100;
+let currentTool = 'pan';
+
+function nav(id, el) {
+  VIEWS.forEach(v => {
+    const view = document.getElementById('v-' + v);
+    if (view) { view.style.display = 'none'; view.classList.remove('active'); }
+  });
+  const target = document.getElementById('v-' + id);
+  if (!target) return;
+  const fullscreen = ['pdf','ai'];
+  target.style.display = fullscreen.includes(id) ? 'flex' : 'block';
+  target.style.flexDirection = fullscreen.includes(id) ? 'column' : '';
+  target.classList.add('active');
+  if (fullscreen.includes(id)) {
+    document.getElementById('mainContent').style.padding = '0';
+    document.getElementById('mainContent').style.overflow = 'hidden';
+  } else {
+    document.getElementById('mainContent').style.padding = '22px';
+    document.getElementById('mainContent').style.overflow = 'auto';
+  }
+  const titleEl = document.getElementById('tb-title');
+  if (titleEl) titleEl.textContent = TITLES[id] || id;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.textContent.toLowerCase().includes(TITLES[id]?.split(' ')[0]?.toLowerCase() || '')) n.classList.add('active');
+    });
+  }
+  document.getElementById('notifPanel').classList.remove('open');
+}
+
+function setTool(btn, toolName) {
+  document.querySelectorAll('.tool').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  currentTool = toolName;
+  const canvas = document.getElementById('pdfPage');
+  if (canvas) canvas.style.cursor = toolName === 'pan' ? 'grab' : toolName === 'zoom' ? 'zoom-in' : toolName === 'measure' ? 'crosshair' : 'crosshair';
+  if (toolName === 'measure') measureMode();
+}
+
+function zoom(delta) {
+  currentZoom = Math.max(25, Math.min(400, currentZoom + delta));
+  document.getElementById('zoomLvl').textContent = currentZoom + '%';
+  const page = document.getElementById('pdfPage');
+  if (page) { page.style.transform = `scale(${currentZoom/100})`; page.style.transformOrigin = 'top center'; }
+}
+
+function selectPage(el, num) {
+  document.querySelectorAll('.pdf-thumb').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  showToast('📄 Tegning ' + num + ' lastet');
+}
+
+function setPTab(tab) {
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('on'));
+  tab.classList.add('on');
+}
+
+function setColor(el, color) {
+  document.querySelectorAll('.color-dot').forEach(d => d.style.boxShadow = '');
+  el.style.boxShadow = `0 0 0 2px ${color}`;
+  showToast('🎨 Farge valgt');
+}
+
+function measureMode() {
+  const canvas = document.getElementById('pdfCanvas');
+  let bar = document.getElementById('measureBar');
+  if (bar) return;
+  bar = document.createElement('div');
+  bar.id = 'measureBar';
+  bar.style.cssText = 'position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#0F2340;color:#fff;padding:8px 18px;border-radius:22px;font-size:12px;font-weight:600;z-index:100;pointer-events:none;white-space:nowrap';
+  bar.textContent = '📏 Klikk startpunkt...';
+  canvas.style.position = 'relative';
+  canvas.appendChild(bar);
+  let clicks = 0;
+  const handler = () => {
+    clicks++;
+    if (clicks === 1) { bar.textContent = '📏 Klikk sluttpunkt...'; }
+    else if (clicks === 2) {
+      const m = (Math.random() * 12 + 2).toFixed(1);
+      bar.textContent = `✓ Resultat: ${m} m (1:100 målestokk)`;
+      setTimeout(() => { bar.remove(); document.getElementById('pdfPage').removeEventListener('click', handler); }, 3000);
+    }
+  };
+  document.getElementById('pdfPage').addEventListener('click', handler);
+}
+
+function pageClick(e) {
+  const page = document.getElementById('pdfPage');
+  const rect = page.getBoundingClientRect();
+  const x = (e.clientX - rect.left);
+  const y = (e.clientY - rect.top);
+  if (currentTool !== 'pan' && currentTool !== 'zoom' && currentTool !== 'measure') {
+    const dot = document.createElement('div');
+    dot.style.cssText = `position:absolute;left:${x-8}px;top:${y-8}px;width:16px;height:16px;border:2px solid #FF6B35;border-radius:50%;pointer-events:none;animation:ripple .7s ease-out forwards`;
+    page.appendChild(dot);
+    setTimeout(() => dot.remove(), 800);
+  }
+}
+
+function markerClick(info) {
+  document.getElementById('markerContent').textContent = info.replace(/\|/g, '\n');
+  openModal('markerModal');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function toggleNotif() {
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+function clearNotifs() {
+  document.getElementById('notifPanel').innerHTML = '<div class="np-hdr">Varsler <span class="np-clear">Ingen nye</span></div><div style="padding:20px;text-align:center;font-size:13px;color:var(--soft)">Ingen uleste varsler ✓</div>';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+const AI_RESPONSES = {
+  'Analyser alle tegninger': '🔍 Analyserer Plan 1, Plan 2 og Sjakt...\n\n• Plan 1: 3 ventiler, 2 sluk, 47m rør\n• Plan 2: 14 ventiler, 8 sluk, 89m rør\n• Sjakt: 2 stigeledninger\n\nTotal: <strong>47 ventiler, 23 sluk, 342m rør</strong>',
+  'Sammenlign revisjoner': '📊 Plan 1 rev02 vs rev03:\n\n✅ Rørstrekk uendret\n🔄 Ventil i rom 102 flyttet 0.5m vest\n➕ 2 nye sluk lagt til i kjeller\n⚠️ Avløpsdim. DN75→DN100 på avsnitt B-C',
+  'Generer prosjektrapport': '📋 Rapport generert for Storfjord Skole\n\n• Masseuttak: 342m rør, 47 ventiler\n• Fremdrift: 68%\n• Åpne avvik: 3\n• Budsjett: 848 000 kr\n\nKlar for eksport til PDF.',
+  'Finn alle ventiler': '🔵 Ventilsøk fullført:\n\n• Plan 1: 3 ventiler (DN25)\n• Plan 2: 14 ventiler (DN25+DN40)\n• Plan 3: 12 ventiler\n• Sjakt: 18 stengeventiler\n\nTotal: <strong>47 ventiler</strong>',
+  'Beregn materialbehov': '💰 Materialbehov:\n\n• Kobberrør: 342m\n• Ventiler: 47 stk\n• Sluk: 23 stk\n• Isolasjon: 342m\n• Rørdeler: ~340 stk (est.)\n\nEstimert budsjett: <strong>284 000 kr</strong>'
+};
+
+function sendChip(chip) {
+  const text = chip.textContent;
+  addMsg('usr', text);
+  chip.style.opacity = '.5';
+  setTimeout(() => {
+    chip.style.opacity = '1';
+    addMsg('ai', AI_RESPONSES[text] || 'Analyserer forespørselen...');
+  }, 900);
+}
+
+function sendMsg() {
+  const inp = document.getElementById('aiInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  addMsg('usr', text);
+  inp.value = '';
+  const replies = [
+    'Basert på tegningsanalysen fant jeg relevant informasjon i Plan 2. Vil du at jeg markerer punktene direkte på tegningen?',
+    'God spørsmål! For Storfjord Skole anbefaler jeg å sjekke dette i Plan 2. Vil jeg finne alle relevante komponenter automatisk?',
+    'Jeg analyserte tegningene og fant 3 relevante steder. Estimatet er klart — vil du se detaljer i masseuttaket?'
+  ];
+  setTimeout(() => addMsg('ai', replies[Math.floor(Math.random() * replies.length)]), 900);
+}
+
+function addMsg(role, html) {
+  const msgs = document.getElementById('aiMsgs');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<div class="mav ${role}">${role === 'ai' ? '🤖' : 'KL'}</div><div class="mbubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-ov.open').forEach(m => m.classList.remove('open'));
+});
+document.addEventListener('click', e => {
+  const np = document.getElementById('notifPanel');
+  const nb = document.getElementById('notifBtn');
+  if (np && nb && !np.contains(e.target) && !nb.contains(e.target)) np.classList.remove('open');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  nav('dashboard');
+  document.querySelector('.nav-item').classList.add('active');
+});
+</script>
+<style>
+@keyframes ripple{0%{opacity:1;transform:scale(.5)}100%{opacity:0;transform:scale(2.5)}}
+#mainContent{overflow-y:auto}
+</style>
+</body>
+</html>
