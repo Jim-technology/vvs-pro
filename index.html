@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RV Tegn</title>
+<title>Tegneprogram</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
@@ -487,7 +487,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
     <div class="pdf-page" id="pdfPage" style="width:794px">
       <div class="bp-grid" id="bpGrid"></div>
 
-      <!-- SVG drawing / blueprint -->
+      <!-- Real PDF render target (hidden until a PDF is loaded) -->
+      <canvas id="pdfRenderCanvas" width="794" height="1050" style="display:none;position:absolute;top:0;left:0"></canvas>
+
+      <!-- SVG example drawing / blueprint (shown until a real PDF is loaded) -->
       <svg id="bgSvg" width="794" height="1050" xmlns="http://www.w3.org/2000/svg">
         <!-- Paper -->
         <rect width="794" height="1050" fill="#f8f9fa"/>
@@ -666,9 +669,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
         <text x="540" y="720" font-size="9" fill="#374151" font-family="Inter,sans-serif">Målsetting</text>
 
         <!-- Second floor plan (lower) -->
-        <text x="60" y="600" font-size="11" fill="#374151" font-family="Inter,sans-serif" font-weight="700">Sjakt — vertikaltegning</text>
+        <text x="60" y="600" font-size="11" fill="#374151" font-family="Inter,sans-serif" font-weight="700">Eksempeltegning — importer egen PDF for å erstatte denne</text>
         <rect x="60" y="610" width="380" height="300" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="8,3"/>
-        <text x="250" y="640" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif" text-anchor="middle">Last inn sjaktplan for å vise her</text>
+        <text x="250" y="640" font-size="9" fill="#9ca3af" font-family="Inter,sans-serif" text-anchor="middle">Klikk "Importer PDF" øverst til høyre</text>
       </svg>
 
       <!-- Interactive draw canvas overlay -->
@@ -678,6 +681,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
       <div id="markers"></div>
     </div>
   </div>
+  <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none" onchange="handlePdfFile(event)">
 </div>
 
 <!-- THUMBNAIL PANEL -->
@@ -950,25 +954,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 <!-- MODALS -->
 <div class="modal-ov" id="importModal" onclick="if(event.target===this)closeModal('importModal')">
   <div class="modal">
-    <div class="modal-hdr"><span class="modal-t">📂 Importer VVS-tegning</span><button class="modal-x" onclick="closeModal('importModal')">×</button></div>
+    <div class="modal-hdr"><span class="modal-t">📂 Importer PDF-tegning</span><button class="modal-x" onclick="closeModal('importModal')">×</button></div>
     <div class="modal-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-        <div class="sym-btn" style="padding:14px" onclick="importFile('local')"><div style="font-size:24px;margin-bottom:5px">💻</div><div style="font-size:12px;font-weight:600;color:var(--text)">Lokal fil</div><div style="font-size:10px;color:var(--soft)">PDF, DWG, DXF</div></div>
-        <div class="sym-btn" style="padding:14px;border-color:rgba(255,107,53,.4)" onclick="importFile('onedrive')"><div style="font-size:24px;margin-bottom:5px">☁️</div><div style="font-size:12px;font-weight:600;color:var(--orange)">OneDrive / SharePoint</div></div>
-        <div class="sym-btn" style="padding:14px" onclick="importFile('dropbox')"><div style="font-size:24px;margin-bottom:5px">📦</div><div style="font-size:12px;font-weight:600;color:var(--text)">Dropbox</div></div>
-        <div class="sym-btn" style="padding:14px" onclick="importFile('gdrive')"><div style="font-size:24px;margin-bottom:5px">🔵</div><div style="font-size:12px;font-weight:600;color:var(--text)">Google Drive</div></div>
+        <div class="sym-btn" style="padding:14px;border-color:rgba(255,107,53,.4)" onclick="document.getElementById('pdfFileInput').click()"><div style="font-size:24px;margin-bottom:5px">💻</div><div style="font-size:12px;font-weight:600;color:var(--orange)">Lokal fil</div><div style="font-size:10px;color:var(--soft)">PDF — fungerer nå</div></div>
+        <div class="sym-btn" style="padding:14px;opacity:.5;cursor:not-allowed" title="Krever pålogging — ikke tilgjengelig i denne prototypen"><div style="font-size:24px;margin-bottom:5px">☁️</div><div style="font-size:12px;font-weight:600;color:var(--text)">OneDrive / SharePoint</div><div style="font-size:10px;color:var(--soft)">Krever pålogging</div></div>
+        <div class="sym-btn" style="padding:14px;opacity:.5;cursor:not-allowed" title="Krever pålogging — ikke tilgjengelig i denne prototypen"><div style="font-size:24px;margin-bottom:5px">📦</div><div style="font-size:12px;font-weight:600;color:var(--text)">Dropbox</div><div style="font-size:10px;color:var(--soft)">Krever pålogging</div></div>
+        <div class="sym-btn" style="padding:14px;opacity:.5;cursor:not-allowed" title="Krever pålogging — ikke tilgjengelig i denne prototypen"><div style="font-size:24px;margin-bottom:5px">🔵</div><div style="font-size:12px;font-weight:600;color:var(--text)">Google Drive</div><div style="font-size:10px;color:var(--soft)">Krever pålogging</div></div>
       </div>
-      <div style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;background:rgba(255,107,53,.03)" onclick="importFile('drop')">
+      <div id="dropZone" style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;background:rgba(255,107,53,.03);transition:all .15s" onclick="document.getElementById('pdfFileInput').click()">
         <div style="font-size:28px">📄</div>
-        <div style="font-size:13px;font-weight:600;margin-top:8px;color:var(--text)">Dra og slipp PDF her</div>
-        <div style="font-size:11px;color:var(--soft);margin-top:3px">PDF · DWG · DXF · IFC · Maks 500 MB</div>
+        <div style="font-size:13px;font-weight:600;margin-top:8px;color:var(--text)">Dra og slipp PDF her, eller klikk for å velge</div>
+        <div style="font-size:11px;color:var(--soft);margin-top:3px">Kun PDF · Maks ~50 MB (nettleserminne)</div>
       </div>
       <div style="margin-top:12px;display:flex;gap:8px">
-        <div style="flex:1"><label class="fl">Målestokk</label><select class="fi"><option>1:100</option><option>1:50</option><option>1:200</option><option>Automatisk</option></select></div>
-        <div style="flex:1"><label class="fl">Tegningstype</label><select class="fi"><option>VVS-plan</option><option>Ventilasjonsplan</option><option>Sjakttegning</option><option>Detaljtegning</option></select></div>
+        <div style="flex:1"><label class="fl">Målestokk</label><select class="fi" id="importScale"><option>1:100</option><option>1:50</option><option>1:200</option><option>Automatisk</option></select></div>
       </div>
     </div>
-    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('importModal')">Avbryt</button><button class="btn btn-p" onclick="closeModal('importModal');showToast('✓ Tegning lastet inn')">Last inn</button></div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="closeModal('importModal')">Avbryt</button></div>
   </div>
 </div>
 
@@ -1277,11 +1280,133 @@ function loadPage(el, num, name) {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 }
 
-// IMPORT
-function importFile(source) {
-  closeModal('importModal');
-  showToast('📂 Kobler til '+source+'...');
-  setTimeout(()=>showToast('✓ Tegning lastet inn'), 1200);
+// ==== EKTE PDF-IMPORT (PDF.js) ====
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let currentPdfDoc = null;
+let currentPdfPageNum = 1;
+let pdfPages = []; // {name, doc}
+
+function handlePdfFile(event) {
+  const file = event.target.files[0];
+  if (file) loadPdfFile(file);
+  event.target.value = ''; // allow re-selecting same file
+}
+
+function loadPdfFile(file) {
+  if (file.type !== 'application/pdf') {
+    showToast('⚠ Kun PDF-filer støttes');
+    return;
+  }
+  showToast('📂 Laster inn PDF...');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const typedArray = new Uint8Array(e.target.result);
+    pdfjsLib.getDocument(typedArray).promise.then(pdf => {
+      currentPdfDoc = pdf;
+      currentPdfPageNum = 1;
+      pdfPages.push({ name: file.name, doc: pdf });
+      renderPdfPage(1);
+      addPdfThumbnails(pdf, file.name);
+      closeModal('importModal');
+      document.getElementById('docName').textContent = file.name;
+      showToast('✓ '+file.name+' lastet inn ('+pdf.numPages+' side'+(pdf.numPages>1?'r':'')+')');
+    }).catch(err => {
+      console.error(err);
+      showToast('⚠ Kunne ikke lese PDF-filen');
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderPdfPage(pageNum) {
+  if (!currentPdfDoc) return;
+  currentPdfDoc.getPage(pageNum).then(page => {
+    const viewport = page.getViewport({ scale: 1.5 });
+    const renderCanvas = document.getElementById('pdfRenderCanvas');
+    const rctx = renderCanvas.getContext('2d');
+    renderCanvas.width = viewport.width;
+    renderCanvas.height = viewport.height;
+
+    // Resize the page wrapper + overlay canvas + grid to match
+    const pageEl = document.getElementById('pdfPage');
+    pageEl.style.width = viewport.width + 'px';
+    pageEl.style.height = viewport.height + 'px';
+
+    const drawCanvasEl = document.getElementById('drawCanvas');
+    drawCanvasEl.width = viewport.width;
+    drawCanvasEl.height = viewport.height;
+    ctx.clearRect(0, 0, drawCanvasEl.width, drawCanvasEl.height);
+    saveState();
+
+    page.render({ canvasContext: rctx, viewport }).promise.then(() => {
+      // Swap: hide example SVG, show real PDF render
+      document.getElementById('bgSvg').style.display = 'none';
+      renderCanvas.style.display = 'block';
+      showToast('✓ Side '+pageNum+' rendret');
+    });
+  });
+}
+
+function addPdfThumbnails(pdf, filename) {
+  const list = document.querySelector('.thumb-list');
+  // Clear example thumbnails on first real import
+  if (!window._realPdfLoaded) {
+    list.innerHTML = '';
+    window._realPdfLoaded = true;
+  }
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const div = document.createElement('div');
+    div.className = 'thumb' + (i === 1 ? ' active' : '');
+    div.innerHTML = `<canvas></canvas><span class="thumb-num">${i}</span>`;
+    div.onclick = () => selectRealPage(div, i);
+    list.appendChild(div);
+    pdf.getPage(i).then(page => {
+      const vp = page.getViewport({ scale: 0.16 });
+      const c = div.querySelector('canvas');
+      c.width = vp.width; c.height = vp.height;
+      c.style.width = '100%'; c.style.display = 'block';
+      page.render({ canvasContext: c.getContext('2d'), viewport: vp });
+    });
+  }
+}
+
+function selectRealPage(el, pageNum) {
+  document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentPdfPageNum = pageNum;
+  renderPdfPage(pageNum);
+}
+
+// Drag & drop support
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+  ['dragover','dragenter'].forEach(evt => dropZone.addEventListener(evt, e => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--orange)';
+    dropZone.style.background = 'rgba(255,107,53,.08)';
+  }));
+  ['dragleave','dragend'].forEach(evt => dropZone.addEventListener(evt, e => {
+    dropZone.style.borderColor = '';
+    dropZone.style.background = 'rgba(255,107,53,.03)';
+  }));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = '';
+    dropZone.style.background = 'rgba(255,107,53,.03)';
+    const file = e.dataTransfer.files[0];
+    if (file) loadPdfFile(file);
+  });
+}
+// Also allow dropping anywhere on the canvas area
+const pdfScrollEl = document.getElementById('pdfScroll');
+if (pdfScrollEl) {
+  pdfScrollEl.addEventListener('dragover', e => e.preventDefault());
+  pdfScrollEl.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) loadPdfFile(file);
+  });
 }
 
 // SYMBOLS
