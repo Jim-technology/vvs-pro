@@ -167,6 +167,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 .logo-sub{font-size:10px;color:var(--soft);letter-spacing:.5px}
 .menu-btn{padding:5px 10px;border-radius:5px;font-size:12px;font-weight:500;color:var(--mid);cursor:pointer;border:none;background:transparent;transition:all .15s;white-space:nowrap}
 .menu-btn:hover{background:var(--surface);color:var(--text)}
+.mode-btn{border:1px solid transparent}
+.mode-btn.active{background:var(--orange);color:#fff}
+.mode-btn.active:hover{background:var(--orange)}
+
+/* ===== CAD PROSJEKTERING ===== */
+.cad-workspace{display:none;flex:1;overflow:hidden}
+.cad-workspace.active{display:flex}
+.cad-canvas-wrap{flex:1;position:relative;overflow:hidden;background:#16202E}
+#cadCanvas{width:100%;height:100%;display:block;cursor:default}
+.cad-toolbar{height:38px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0}
+.cad-side{width:280px;background:var(--navy);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.cad-palette-wrap{width:230px;background:var(--navy);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:10px}
+.cad-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.cad-tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--soft);cursor:pointer;border-bottom:2px solid transparent}
+.cad-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.cad-panel{padding:12px;display:none}
+.cad-panel.active{display:block}
+.sym-btn.placing{border-color:var(--orange);background:rgba(255,107,53,.1)}
 .menu-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
 .top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .doc-name{font-size:13px;font-weight:600;color:var(--text)}
@@ -337,6 +355,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
   <button class="menu-btn" onclick="openModal('skalaModal')">Målestokk</button>
   <button class="menu-btn" onclick="switchTab('ai')">🤖 AI-analyse</button>
   <button class="menu-btn" onclick="exportMenu()">📤 Eksporter</button>
+  <div class="menu-sep"></div>
+  <button class="menu-btn mode-btn active" id="modeBtnPdf" onclick="setAppMode('pdf')">📄 PDF-tegning</button>
+  <button class="menu-btn mode-btn" id="modeBtnCad" onclick="setAppMode('cad')">🛠 Prosjektering</button>
   <div class="menu-sep"></div>
   <div class="top-right">
     <div>
@@ -941,6 +962,52 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 
 </div><!-- /workspace -->
 
+<!-- ===== CAD PROSJEKTERINGS-WORKSPACE ===== -->
+<div class="cad-workspace" id="cadWorkspace">
+  <!-- Component palette -->
+  <div class="cad-palette-wrap" id="cadPalette"></div>
+
+  <!-- Canvas -->
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="cad-toolbar">
+      <div class="ct-group">
+        <button class="zbtn" onclick="cadZoomBtn(-0.15)">−</button>
+        <span class="zval" id="cadZoomVal">100%</span>
+        <button class="zbtn" onclick="cadZoomBtn(0.15)">+</button>
+        <button class="ct-btn" onclick="cadZoomFit()">⊡ Fit</button>
+      </div>
+      <div class="ct-sep"></div>
+      <div class="ct-group">
+        <button class="ct-btn" id="cadSnapBtn" class="ct-btn on" onclick="toggleCadSnap(this)">⊞ Snap</button>
+        <span class="ct-label">R = rotér 15° · Dobbeltklikk = rotér 90° · Del = slett · Alt+dra / høyreklikk = panorér</span>
+      </div>
+      <div class="ct-sep"></div>
+      <button class="ct-btn" onclick="cadUndo()">↩ Angre</button>
+      <button class="ct-btn" onclick="cadClearAll()" style="color:var(--red)">🗑 Slett alt</button>
+      <button class="ct-btn" onclick="cadExportPNG()" style="margin-left:auto">📤 Eksporter PNG</button>
+    </div>
+    <div class="cad-canvas-wrap">
+      <canvas id="cadCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Right panel: properties + mass list -->
+  <div class="cad-side">
+    <div class="cad-tabs">
+      <div class="cad-tab active" onclick="switchCadTab('egenskaper',this)">Egenskaper</div>
+      <div class="cad-tab" onclick="switchCadTab('masser',this)">Komponentliste</div>
+    </div>
+    <div class="cad-panel active" id="cadPanelEgenskaper">
+      <div id="cadProps"><div class="ps-title">Egenskaper</div><div style="font-size:12px;color:var(--soft);padding:8px">Ingen komponent valgt</div></div>
+    </div>
+    <div class="cad-panel" id="cadPanelMasser">
+      <div class="ps-title">Komponentliste</div>
+      <div id="cadMassList"><div style="font-size:12px;color:var(--soft);padding:8px">Ingen komponenter plassert ennå</div></div>
+    </div>
+  </div>
+</div>
+<!-- ===== /CAD PROSJEKTERINGS-WORKSPACE ===== -->
+
 <!-- STATUS BAR -->
 <div class="statusbar">
   <div class="sb-item"><div class="sb-dot" style="background:var(--green)"></div>Lagret automatisk</div>
@@ -1502,12 +1569,1285 @@ const style = document.createElement('style');
 style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}';
 document.head.appendChild(style);
 
+
+// ========== KOMPONENTBIBLIOTEK ==========
+// ============================================================
+// KOMPONENTBIBLIOTEK — Ventilasjonssymboler
+// ============================================================
+// Hver komponenttype definerer:
+//  - geometri (hvordan den tegnes, basert på bredde/høyde)
+//  - porter: koblingspunkter relativt til komponentens senter (0,0), FØR rotasjon
+//    { id, x, y, dir } — dir er retningen luftstrømmen/kanalen peker (grader, 0=høyre,90=ned,180=venstre,270=opp)
+//  - dimensjoner: standard kanaldimensjoner komponenten støtter
+//  - produkter: liste av reelle produktvarianter (fylles inn senere med TROX/Lindab-data)
+//
+// PLASSHOLDER-PRODUKTER: feltene "produsent", "serie", "produktkode" er tomme/generiske
+// placeholders. Fyll inn med reelle data fra TROX/Lindab produktkataloger når tilgjengelig.
+// ============================================================
+
+const DUCT_SHAPES = { ROUND: 'round', RECT: 'rect' };
+
+const COMPONENT_LIBRARY = {
+
+  // ---------- KANALER ----------
+  'duct-round': {
+    label: 'Kanal, sirkulær',
+    category: 'kanal',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'duct-round',
+    defaultLength: 100,
+    resizable: true, // lengde kan strekkes
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315','Ø400','Ø500','Ø630'],
+    defaultDimension: 'Ø160',
+    ports: (len) => [
+      { id: 'a', x: 0, y: 0, dir: 180 },
+      { id: 'b', x: len, y: 0, dir: 0 }
+    ],
+    products: [
+      { produsent: '', serie: '', produktkode: '', beskrivelse: 'Standard spirokanal' }
+    ]
+  },
+  'duct-rect': {
+    label: 'Kanal, rektangulær',
+    category: 'kanal',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'duct-rect',
+    defaultLength: 100,
+    resizable: true,
+    dimensions: ['200×100','300×150','400×200','500×250','600×300','800×400','1000×500'],
+    defaultDimension: '400×200',
+    ports: (len) => [
+      { id: 'a', x: 0, y: 0, dir: 180 },
+      { id: 'b', x: len, y: 0, dir: 0 }
+    ],
+    products: [
+      { produsent: '', serie: '', produktkode: '', beskrivelse: 'Rektangulær kanal, galvanisert stål' }
+    ]
+  },
+  'duct-flex': {
+    label: 'Fleksibel kanal',
+    category: 'kanal',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'duct-flex',
+    defaultLength: 80,
+    resizable: true,
+    flexible: true, // tegnes som bølget linje, kan bøyes fritt
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250'],
+    defaultDimension: 'Ø125',
+    ports: (len) => [
+      { id: 'a', x: 0, y: 0, dir: 180 },
+      { id: 'b', x: len, y: 0, dir: 0 }
+    ],
+    products: [
+      { produsent: '', serie: '', produktkode: '', beskrivelse: 'Isolert fleksislange' }
+    ]
+  },
+
+  // ---------- BEND / RETNINGSENDRING ----------
+  'bend-90': {
+    label: 'Bend 90°',
+    category: 'fitting',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'bend-90',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315','Ø400'],
+    defaultDimension: 'Ø160',
+    size: { w: 40, h: 40 },
+    ports: () => [
+      { id: 'a', x: -20, y: 0, dir: 180 },
+      { id: 'b', x: 0, y: -20, dir: 270 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: '90° bend, sirkulær' }]
+  },
+  'bend-45': {
+    label: 'Bend 45°',
+    category: 'fitting',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'bend-45',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315','Ø400'],
+    defaultDimension: 'Ø160',
+    size: { w: 40, h: 24 },
+    ports: () => [
+      { id: 'a', x: -20, y: 0, dir: 180 },
+      { id: 'b', x: 14, y: -14, dir: 315 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: '45° bend, sirkulær' }]
+  },
+
+  // ---------- T-STYKKE / KRYSS ----------
+  't-piece': {
+    label: 'T-stykke',
+    category: 'fitting',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 't-piece',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315'],
+    defaultDimension: 'Ø160',
+    size: { w: 60, h: 40 },
+    ports: () => [
+      { id: 'a', x: -30, y: 0, dir: 180 },
+      { id: 'b', x: 30, y: 0, dir: 0 },
+      { id: 'c', x: 0, y: -20, dir: 270 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'T-stykke, sirkulær, 90° avgrening' }]
+  },
+  'cross-piece': {
+    label: 'Kryss',
+    category: 'fitting',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'cross-piece',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315'],
+    defaultDimension: 'Ø160',
+    size: { w: 60, h: 60 },
+    ports: () => [
+      { id: 'a', x: -30, y: 0, dir: 180 },
+      { id: 'b', x: 30, y: 0, dir: 0 },
+      { id: 'c', x: 0, y: -30, dir: 270 },
+      { id: 'd', x: 0, y: 30, dir: 90 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Krysstykke, 4-veis' }]
+  },
+
+  // ---------- OVERGANG / REDUKSJON ----------
+  'reducer': {
+    label: 'Overgang/reduksjon',
+    category: 'fitting',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'reducer',
+    dimensions: ['Ø200→Ø160','Ø250→Ø200','Ø315→Ø250','Ø400→Ø315'],
+    defaultDimension: 'Ø250→Ø200',
+    size: { w: 44, h: 30 },
+    ports: () => [
+      { id: 'a', x: -22, y: 0, dir: 180 },
+      { id: 'b', x: 22, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Konsentrisk reduksjon' }]
+  },
+
+  // ---------- VENTILER / SPJELD ----------
+  'valve-supply': {
+    label: 'Tilluftsventil',
+    category: 'ventil',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'valve-supply',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200'],
+    defaultDimension: 'Ø125',
+    size: { w: 32, h: 32 },
+    ports: () => [{ id: 'a', x: -16, y: 0, dir: 180 }],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Tilluftsventil, justerbar' }]
+  },
+  'valve-exhaust': {
+    label: 'Avtrekksventil',
+    category: 'ventil',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'valve-exhaust',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200'],
+    defaultDimension: 'Ø125',
+    size: { w: 32, h: 32 },
+    ports: () => [{ id: 'a', x: -16, y: 0, dir: 180 }],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Avtrekksventil, justerbar' }]
+  },
+  'valve-control': {
+    label: 'Kontrollventil',
+    category: 'ventil',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'valve-control',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250'],
+    defaultDimension: 'Ø160',
+    size: { w: 36, h: 24 },
+    ports: () => [
+      { id: 'a', x: -18, y: 0, dir: 180 },
+      { id: 'b', x: 18, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Innreguleringsventil / CAV-DAV' }]
+  },
+  'damper': {
+    label: 'Spjeld',
+    category: 'ventil',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'damper',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315'],
+    defaultDimension: 'Ø200',
+    size: { w: 30, h: 24 },
+    ports: () => [
+      { id: 'a', x: -15, y: 0, dir: 180 },
+      { id: 'b', x: 15, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Reguleringsspjeld manuelt' }]
+  },
+  'fire-damper': {
+    label: 'Brannspjeld',
+    category: 'ventil',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'fire-damper',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315','Ø400'],
+    defaultDimension: 'Ø200',
+    size: { w: 34, h: 34 },
+    ports: () => [
+      { id: 'a', x: -17, y: 0, dir: 180 },
+      { id: 'b', x: 17, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Brannspjeld EI60, med smeltesikring' }]
+  },
+
+  // ---------- LYD / FILTER ----------
+  'silencer': {
+    label: 'Lydfelle',
+    category: 'utstyr',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'silencer',
+    dimensions: ['Ø100','Ø125','Ø160','Ø200','Ø250','Ø315'],
+    defaultDimension: 'Ø200',
+    size: { w: 60, h: 36 },
+    ports: () => [
+      { id: 'a', x: -30, y: 0, dir: 180 },
+      { id: 'b', x: 30, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Kulisselyddemper' }]
+  },
+  'filter': {
+    label: 'Filter',
+    category: 'utstyr',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'filter',
+    dimensions: ['200×200','300×300','400×400','592×592'],
+    defaultDimension: '400×400',
+    size: { w: 44, h: 34 },
+    ports: () => [
+      { id: 'a', x: -22, y: 0, dir: 180 },
+      { id: 'b', x: 22, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Posefilter, klasse ePM1' }]
+  },
+
+  // ---------- VIFTE / AGGREGAT ----------
+  'fan': {
+    label: 'Vifte',
+    category: 'utstyr',
+    shape: DUCT_SHAPES.ROUND,
+    icon: 'fan',
+    dimensions: ['Ø160','Ø200','Ø250','Ø315','Ø400','Ø500'],
+    defaultDimension: 'Ø250',
+    size: { w: 46, h: 46 },
+    ports: () => [
+      { id: 'a', x: -23, y: 0, dir: 180 },
+      { id: 'b', x: 23, y: 0, dir: 0 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Kanalvifte, EC-motor' }]
+  },
+  'ahu': {
+    label: 'Aggregat',
+    category: 'utstyr',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'ahu',
+    dimensions: ['Kompakt','Middels','Stor'],
+    defaultDimension: 'Middels',
+    size: { w: 100, h: 60 },
+    ports: () => [
+      { id: 'supply-out', x: 50, y: -15, dir: 0 },
+      { id: 'extract-in', x: 50, y: 15, dir: 0 },
+      { id: 'outdoor-in', x: -50, y: -15, dir: 180 },
+      { id: 'exhaust-out', x: -50, y: 15, dir: 180 }
+    ],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Ventilasjonsaggregat m/ varmegjenvinning' }]
+  },
+
+  // ---------- RIST / INNTAK / AVKAST ----------
+  'grille': {
+    label: 'Ventilasjonsrist',
+    category: 'terminal',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'grille',
+    dimensions: ['200×100','300×150','400×200','600×300'],
+    defaultDimension: '300×150',
+    size: { w: 32, h: 32 },
+    ports: () => [{ id: 'a', x: -16, y: 0, dir: 180 }],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Ventilasjonsrist, justerbare lameller' }]
+  },
+  'outdoor-intake': {
+    label: 'Uteluft/inntak',
+    category: 'terminal',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'outdoor-intake',
+    dimensions: ['300×300','400×400','600×600'],
+    defaultDimension: '400×400',
+    size: { w: 34, h: 34 },
+    ports: () => [{ id: 'a', x: 17, y: 0, dir: 0 }],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Veggrist for uteluftinntak, m/fugleverk' }]
+  },
+  'exhaust-outlet': {
+    label: 'Avkast',
+    category: 'terminal',
+    shape: DUCT_SHAPES.RECT,
+    icon: 'exhaust-outlet',
+    dimensions: ['300×300','400×400','600×600'],
+    defaultDimension: '400×400',
+    size: { w: 34, h: 34 },
+    ports: () => [{ id: 'a', x: -17, y: 0, dir: 180 }],
+    products: [{ produsent: '', serie: '', produktkode: '', beskrivelse: 'Takhatt / avkastningshette' }]
+  }
+};
+
+// Kategorier for gruppering i UI
+const CATEGORY_LABELS = {
+  kanal: 'Kanaler',
+  fitting: 'Bend / T / Overgang',
+  ventil: 'Ventiler / Spjeld',
+  utstyr: 'Utstyr',
+  terminal: 'Terminaler'
+};
+
+if (typeof module !== 'undefined') module.exports = { COMPONENT_LIBRARY, CATEGORY_LABELS, DUCT_SHAPES };
+// ========== CAD-MOTOR ==========
+// ============================================================
+// CAD-MOTOR — Objektmodell, snap, dra/rotér, auto-ruting
+// ============================================================
+
+const SNAP_THRESHOLD = 18;      // px avstand for at porter skal snappe sammen
+const GRID_SIZE = 20;           // px grid for posisjonssnap
+
+class CadState {
+  constructor() {
+    this.objects = new Map();   // id -> {id, type, x, y, rotation, dimension, length}
+    this.connections = new Map(); // id -> {id, fromObj, fromPort, toObj, toPort, path:[{x,y}...]}
+    this.nextId = 1;
+    this.selectedId = null;
+    this.gridSnap = true;
+    this.portSnap = true;
+  }
+
+  newId(prefix) { return prefix + '_' + (this.nextId++); }
+
+  addObject(type, x, y, dimension) {
+    const def = COMPONENT_LIBRARY[type];
+    if (!def) return null;
+    const id = this.newId('obj');
+    const obj = {
+      id, type, x, y, rotation: 0,
+      dimension: dimension || def.defaultDimension,
+      length: def.defaultLength || null
+    };
+    this.objects.set(id, obj);
+    return obj;
+  }
+
+  removeObject(id) {
+    this.objects.delete(id);
+    // Remove connections touching this object
+    for (const [cid, conn] of this.connections) {
+      if (conn.fromObj === id || conn.toObj === id) this.connections.delete(cid);
+    }
+  }
+
+  getWorldPorts(obj) {
+    const def = COMPONENT_LIBRARY[obj.type];
+    if (!def) return [];
+    const localPorts = typeof def.ports === 'function'
+      ? def.ports(obj.length || def.defaultLength || 100)
+      : def.ports;
+    const rad = obj.rotation * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    return localPorts.map(p => ({
+      objId: obj.id,
+      portId: p.id,
+      x: obj.x + (p.x * cos - p.y * sin),
+      y: obj.y + (p.x * sin + p.y * cos),
+      dir: (p.dir + obj.rotation) % 360
+    }));
+  }
+
+  allWorldPorts(excludeObjId) {
+    const out = [];
+    for (const obj of this.objects.values()) {
+      if (obj.id === excludeObjId) continue;
+      out.push(...this.getWorldPorts(obj));
+    }
+    return out;
+  }
+
+  // Find nearest free port to a given world point, within threshold
+  findSnapPort(x, y, excludeObjId) {
+    let best = null, bestDist = SNAP_THRESHOLD;
+    for (const p of this.allWorldPorts(excludeObjId)) {
+      // skip already-connected ports
+      if (this.isPortConnected(p.objId, p.portId)) continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bestDist) { bestDist = d; best = p; }
+    }
+    return best;
+  }
+
+  isPortConnected(objId, portId) {
+    for (const conn of this.connections.values()) {
+      if ((conn.fromObj === objId && conn.fromPort === portId) ||
+          (conn.toObj === objId && conn.toPort === portId)) return true;
+    }
+    return false;
+  }
+
+  connect(objA, portA, objB, portB) {
+    const id = this.newId('conn');
+    const conn = { id, fromObj: objA, fromPort: portA, toObj: objB, toPort: portB };
+    this.connections.set(id, conn);
+    this.updateConnectionPath(conn);
+    return conn;
+  }
+
+  disconnectPort(objId, portId) {
+    for (const [cid, conn] of this.connections) {
+      if ((conn.fromObj === objId && conn.fromPort === portId) ||
+          (conn.toObj === objId && conn.toPort === portId)) {
+        this.connections.delete(cid);
+      }
+    }
+  }
+
+  // ---- Ortogonal auto-routing (Manhattan-style L/Z path) ----
+  updateConnectionPath(conn) {
+    const objA = this.objects.get(conn.fromObj);
+    const objB = this.objects.get(conn.toObj);
+    if (!objA || !objB) return;
+    const portsA = this.getWorldPorts(objA);
+    const portsB = this.getWorldPorts(objB);
+    const pa = portsA.find(p => p.portId === conn.fromPort);
+    const pb = portsB.find(p => p.portId === conn.toPort);
+    if (!pa || !pb) return;
+    conn.path = this.computeOrthogonalPath(pa, pb);
+  }
+
+  updateAllConnectionsFor(objId) {
+    for (const conn of this.connections.values()) {
+      if (conn.fromObj === objId || conn.toObj === objId) {
+        this.updateConnectionPath(conn);
+      }
+    }
+  }
+
+  computeOrthogonalPath(pa, pb) {
+    // Direction vectors from port "dir" (degrees, 0=right,90=down,180=left,270=up)
+    const dirVec = d => {
+      const r = d * Math.PI / 180;
+      return { x: Math.cos(r), y: Math.sin(r) };
+    };
+    const va = dirVec(pa.dir);
+    const vb = dirVec(pb.dir);
+    const start = { x: pa.x, y: pa.y };
+    const end = { x: pb.x, y: pb.y };
+
+    // Stub out from each port in its facing direction before routing
+    const stub = 14;
+    const s1 = { x: start.x + va.x * stub, y: start.y + va.y * stub };
+    const e1 = { x: end.x + vb.x * stub, y: end.y + vb.y * stub };
+
+    const dx = e1.x - s1.x, dy = e1.y - s1.y;
+    const pts = [start, s1];
+
+    // Determine if ports face each other roughly horizontally or vertically
+    const aHoriz = Math.abs(va.x) > Math.abs(va.y);
+    const bHoriz = Math.abs(vb.x) > Math.abs(vb.y);
+
+    if (aHoriz && bHoriz) {
+      const midX = s1.x + dx / 2;
+      pts.push({ x: midX, y: s1.y }, { x: midX, y: e1.y });
+    } else if (!aHoriz && !bHoriz) {
+      const midY = s1.y + dy / 2;
+      pts.push({ x: s1.x, y: midY }, { x: e1.x, y: midY });
+    } else if (aHoriz && !bHoriz) {
+      pts.push({ x: e1.x, y: s1.y });
+    } else {
+      pts.push({ x: s1.x, y: e1.y });
+    }
+    pts.push(e1, end);
+
+    // Remove duplicate consecutive points
+    return pts.filter((p, i) => i === 0 || Math.hypot(p.x - pts[i-1].x, p.y - pts[i-1].y) > 0.5);
+  }
+
+  // Move an object; update its own connections' paths
+  moveObject(id, x, y) {
+    const obj = this.objects.get(id);
+    if (!obj) return;
+    if (this.gridSnap) {
+      x = Math.round(x / GRID_SIZE) * GRID_SIZE;
+      y = Math.round(y / GRID_SIZE) * GRID_SIZE;
+    }
+    obj.x = x; obj.y = y;
+    this.updateAllConnectionsFor(id);
+  }
+
+  rotateObject(id, deltaDeg) {
+    const obj = this.objects.get(id);
+    if (!obj) return;
+    obj.rotation = ((obj.rotation + deltaDeg) % 360 + 360) % 360;
+    this.updateAllConnectionsFor(id);
+  }
+
+  setLength(id, len) {
+    const obj = this.objects.get(id);
+    if (!obj) return;
+    obj.length = Math.max(20, len);
+    this.updateAllConnectionsFor(id);
+  }
+
+  serialize() {
+    return JSON.stringify({
+      objects: [...this.objects.values()],
+      connections: [...this.connections.values()].map(c => ({ id:c.id, fromObj:c.fromObj, fromPort:c.fromPort, toObj:c.toObj, toPort:c.toPort }))
+    });
+  }
+
+  loadFrom(json) {
+    const data = JSON.parse(json);
+    this.objects.clear(); this.connections.clear();
+    let maxN = 0;
+    data.objects.forEach(o => {
+      this.objects.set(o.id, o);
+      const n = parseInt((o.id.match(/_(\d+)$/)||[])[1] || 0);
+      if (n > maxN) maxN = n;
+    });
+    data.connections.forEach(c => {
+      this.connections.set(c.id, c);
+      this.updateConnectionPath(c);
+    });
+    this.nextId = maxN + 1;
+  }
+}
+// ========== RENDERER ==========
+// ============================================================
+// RENDERER — tegner komponenter, kanaler, porter, snap-hint
+// ============================================================
+
+function drawGrid(ctx, w, h, size, offsetX, offsetY) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(96,165,250,.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = offsetX % size; x < w; x += size) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+  for (let y = offsetY % size; y < h; y += size) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawConnection(ctx, conn, isRound) {
+  if (!conn.path || conn.path.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = isRound ? '#60A5FA' : '#38BDF8';
+  ctx.lineWidth = isRound ? 6 : 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(conn.path[0].x, conn.path[0].y);
+  for (let i = 1; i < conn.path.length; i++) ctx.lineTo(conn.path[i].x, conn.path[i].y);
+  ctx.stroke();
+  // Center line (darker) to show it's a duct, not a blob
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#1E3A5F';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPortMarkers(ctx, ports, highlightPortId, obj) {
+  ports.forEach(p => {
+    const connected = window.cadState.isPortConnected(p.objId, p.portId);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = connected ? 'rgba(52,211,153,.9)' : 'rgba(255,107,53,.9)';
+    ctx.fill();
+    if (highlightPortId === p.portId) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+      ctx.strokeStyle = '#FBBF24';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
+// Draw one component by type, centered at (0,0) in local coords, THEN transform applied by caller
+function drawComponentShape(ctx, type, obj) {
+  const def = COMPONENT_LIBRARY[type];
+  if (!def) return;
+  const color = '#E8EFF8';
+  const accent = '#60A5FA';
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.fillStyle = 'rgba(96,165,250,.10)';
+
+  switch (type) {
+    case 'duct-round': {
+      const len = obj.length || def.defaultLength;
+      ctx.beginPath();
+      ctx.moveTo(0, -10); ctx.lineTo(len, -10);
+      ctx.moveTo(0, 10); ctx.lineTo(len, 10);
+      ctx.stroke();
+      ctx.fillRect(0, -10, len, 20);
+      ctx.strokeRect(0, -10, len, 20);
+      break;
+    }
+    case 'duct-rect': {
+      const len = obj.length || def.defaultLength;
+      ctx.fillStyle = 'rgba(56,189,248,.10)';
+      ctx.fillRect(0, -14, len, 28);
+      ctx.strokeRect(0, -14, len, 28);
+      // hatching to distinguish rectangular
+      ctx.beginPath();
+      for (let x = 8; x < len; x += 14) { ctx.moveTo(x, -14); ctx.lineTo(x - 6, 14); }
+      ctx.strokeStyle = 'rgba(56,189,248,.3)'; ctx.lineWidth = 1;
+      ctx.stroke();
+      break;
+    }
+    case 'duct-flex': {
+      const len = obj.length || def.defaultLength;
+      ctx.beginPath();
+      const waves = Math.floor(len / 10);
+      ctx.moveTo(0, 0);
+      for (let i = 0; i < waves; i++) {
+        const x1 = (i + 0.5) * (len / waves);
+        const x2 = (i + 1) * (len / waves);
+        ctx.quadraticCurveTo(x1, i % 2 === 0 ? -9 : 9, x2, 0);
+      }
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = accent;
+      ctx.stroke();
+      break;
+    }
+    case 'bend-90': {
+      ctx.beginPath();
+      ctx.arc(0, -20, 20, 0, Math.PI / 2);
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = 'rgba(96,165,250,.25)';
+      ctx.stroke();
+      ctx.lineWidth = 2; ctx.strokeStyle = color;
+      ctx.beginPath(); ctx.arc(0, -20, 26, 0, Math.PI/2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -20, 14, 0, Math.PI/2); ctx.stroke();
+      break;
+    }
+    case 'bend-45': {
+      ctx.beginPath();
+      ctx.moveTo(-20, -10); ctx.lineTo(0, -10); ctx.lineTo(14, -24);
+      ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(96,165,250,.25)'; ctx.lineCap='round';
+      ctx.stroke();
+      ctx.lineWidth = 2; ctx.strokeStyle = color;
+      ctx.stroke();
+      break;
+    }
+    case 't-piece': {
+      ctx.fillStyle = 'rgba(96,165,250,.12)';
+      ctx.fillRect(-30, -10, 60, 20);
+      ctx.fillRect(-10, -20, 20, 20);
+      ctx.strokeRect(-30, -10, 60, 20);
+      ctx.strokeRect(-10, -20, 20, 20);
+      break;
+    }
+    case 'cross-piece': {
+      ctx.fillStyle = 'rgba(96,165,250,.12)';
+      ctx.fillRect(-30, -10, 60, 20);
+      ctx.fillRect(-10, -30, 20, 60);
+      ctx.strokeRect(-30, -10, 60, 20);
+      ctx.strokeRect(-10, -30, 20, 60);
+      break;
+    }
+    case 'reducer': {
+      ctx.beginPath();
+      ctx.moveTo(-22, -14); ctx.lineTo(22, -8); ctx.lineTo(22, 8); ctx.lineTo(-22, 14); ctx.closePath();
+      ctx.fillStyle = 'rgba(96,165,250,.12)';
+      ctx.fill(); ctx.stroke();
+      break;
+    }
+    case 'valve-supply': case 'valve-exhaust': {
+      const isSupply = type === 'valve-supply';
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI * 2);
+      ctx.fillStyle = isSupply ? 'rgba(52,211,153,.15)' : 'rgba(248,113,113,.15)';
+      ctx.strokeStyle = isSupply ? '#34D399' : '#F87171';
+      ctx.fill(); ctx.stroke();
+      // Arrows indicating direction
+      ctx.beginPath();
+      if (isSupply) {
+        ctx.moveTo(-6,-6); ctx.lineTo(6,0); ctx.lineTo(-6,6);
+      } else {
+        ctx.moveTo(6,-6); ctx.lineTo(-6,0); ctx.lineTo(6,6);
+      }
+      ctx.stroke();
+      break;
+    }
+    case 'valve-control': {
+      ctx.strokeRect(-18, -12, 36, 24);
+      ctx.beginPath(); ctx.moveTo(-10,-8); ctx.lineTo(10,8); ctx.moveTo(10,-8); ctx.lineTo(-10,8); ctx.stroke();
+      break;
+    }
+    case 'damper': {
+      ctx.strokeRect(-15, -12, 30, 24);
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(10, -8); ctx.lineWidth = 3; ctx.stroke();
+      break;
+    }
+    case 'fire-damper': {
+      ctx.strokeRect(-17, -17, 34, 34);
+      ctx.fillStyle = 'rgba(248,113,113,.2)';
+      ctx.fillRect(-17,-17,34,34);
+      ctx.strokeStyle = '#F87171';
+      ctx.beginPath(); ctx.moveTo(-17,-17); ctx.lineTo(17,17); ctx.moveTo(17,-17); ctx.lineTo(-17,17); ctx.stroke();
+      ctx.fillStyle = '#F87171'; ctx.font = 'bold 9px Inter'; ctx.textAlign='center';
+      ctx.fillText('EI', 0, 3);
+      break;
+    }
+    case 'silencer': {
+      ctx.fillStyle = 'rgba(167,139,250,.15)'; ctx.strokeStyle = '#A78BFA';
+      ctx.fillRect(-30, -18, 60, 36); ctx.strokeRect(-30, -18, 60, 36);
+      ctx.beginPath();
+      for (let x=-24; x<30; x+=8){ ctx.moveTo(x,-18); ctx.lineTo(x,18); }
+      ctx.lineWidth=1; ctx.stroke();
+      break;
+    }
+    case 'filter': {
+      ctx.fillStyle = 'rgba(251,191,36,.15)'; ctx.strokeStyle = '#FBBF24';
+      ctx.fillRect(-22, -17, 44, 34); ctx.strokeRect(-22, -17, 44, 34);
+      ctx.beginPath();
+      for (let x=-18; x<22; x+=6){ ctx.moveTo(x,-17); ctx.lineTo(x,17); }
+      ctx.lineWidth=1; ctx.stroke();
+      break;
+    }
+    case 'fan': {
+      ctx.beginPath(); ctx.arc(0,0,23,0,Math.PI*2);
+      ctx.fillStyle='rgba(251,191,36,.15)'; ctx.strokeStyle='#FBBF24';
+      ctx.fill(); ctx.stroke();
+      ctx.save(); ctx.translate(0,0);
+      for(let i=0;i<3;i++){
+        ctx.rotate(Math.PI*2/3);
+        ctx.beginPath(); ctx.ellipse(0,-10,4,10,0,0,Math.PI*2); ctx.fillStyle='#FBBF24'; ctx.fill();
+      }
+      ctx.restore();
+      break;
+    }
+    case 'ahu': {
+      ctx.fillStyle = 'rgba(167,139,250,.12)'; ctx.strokeStyle = '#A78BFA';
+      ctx.fillRect(-50, -30, 100, 60); ctx.strokeRect(-50, -30, 100, 60);
+      ctx.fillStyle = '#A78BFA'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center';
+      ctx.fillText('AGG', 0, 4);
+      ctx.font = '8px Inter';
+      ctx.fillText('TA', 35, -20); ctx.fillText('AF', 35, 24);
+      ctx.fillText('UL', -35, -20); ctx.fillText('AV', -35, 24);
+      break;
+    }
+    case 'grille': {
+      ctx.strokeRect(-16,-16,32,32);
+      ctx.beginPath();
+      for(let y=-12;y<16;y+=6){ ctx.moveTo(-14,y); ctx.lineTo(14,y); }
+      ctx.lineWidth=1.5; ctx.stroke();
+      break;
+    }
+    case 'outdoor-intake': {
+      ctx.fillStyle='rgba(96,165,250,.15)'; ctx.strokeStyle='#60A5FA';
+      ctx.fillRect(-17,-17,34,34); ctx.strokeRect(-17,-17,34,34);
+      ctx.beginPath();
+      for(let a=-14;a<17;a+=6){ ctx.moveTo(a,-14); ctx.lineTo(a+6,14); }
+      ctx.strokeStyle='rgba(96,165,250,.5)'; ctx.lineWidth=1.5; ctx.stroke();
+      break;
+    }
+    case 'exhaust-outlet': {
+      ctx.fillStyle='rgba(248,113,113,.15)'; ctx.strokeStyle='#F87171';
+      ctx.fillRect(-17,-17,34,34); ctx.strokeRect(-17,-17,34,34);
+      ctx.beginPath();
+      for(let a=-14;a<17;a+=6){ ctx.moveTo(a,14); ctx.lineTo(a+6,-14); }
+      ctx.strokeStyle='rgba(248,113,113,.5)'; ctx.lineWidth=1.5; ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+function renderCad(ctx, state, canvasW, canvasH, panX, panY, zoom, hoverSnap, selectedId) {
+  ctx.save();
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = '#16202E';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  drawGrid(ctx, canvasW, canvasH, GRID_SIZE * zoom, panX, panY);
+
+  ctx.translate(panX, panY);
+  ctx.scale(zoom, zoom);
+
+  // Draw connections first (under components)
+  for (const conn of state.connections.values()) {
+    const objA = state.objects.get(conn.fromObj);
+    const isRound = objA && COMPONENT_LIBRARY[objA.type] && COMPONENT_LIBRARY[objA.type].shape === 'round';
+    drawConnection(ctx, conn, isRound);
+  }
+
+  // Draw components
+  for (const obj of state.objects.values()) {
+    ctx.save();
+    ctx.translate(obj.x, obj.y);
+    ctx.rotate(obj.rotation * Math.PI / 180);
+    drawComponentShape(ctx, obj.type, obj);
+    ctx.restore();
+
+    // Selection highlight
+    if (obj.id === selectedId) {
+      const def = COMPONENT_LIBRARY[obj.type];
+      const w = obj.length || (def.size ? def.size.w : 40);
+      const h = def.size ? def.size.h : 30;
+      ctx.save();
+      ctx.translate(obj.x, obj.y);
+      ctx.rotate(obj.rotation * Math.PI / 180);
+      ctx.strokeStyle = '#FF6B35';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-4, -h/2-4, w+8, h+8);
+      ctx.restore();
+    }
+
+    // Dimension label
+    ctx.save();
+    ctx.fillStyle = 'rgba(160,180,204,.8)';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(obj.dimension || '', obj.x, obj.y + 26);
+    ctx.restore();
+
+    // Port markers
+    const ports = state.getWorldPorts(obj);
+    drawPortMarkers(ctx, ports, null, obj);
+  }
+
+  // Snap hint (highlighted target port while dragging)
+  if (hoverSnap) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(hoverSnap.x, hoverSnap.y, 12, 0, Math.PI * 2);
+    ctx.strokeStyle = '#34D399';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+// ========== UI & INTERAKSJON ==========
+// ============================================================
+// UI & INTERAKSJON — palett, dra-inn, mus-håndtering, rotasjon
+// ============================================================
+
+window.cadState = new CadState();
+let cadCanvas, cadCtx;
+let cadPanX = 40, cadPanY = 40, cadZoom = 1;
+let cadDragObjId = null, cadDragOffset = {x:0,y:0};
+let cadHoverSnap = null;
+let cadIsPanning = false, cadPanStart = null;
+let cadPendingPlaceType = null; // component type waiting to be placed by click
+let cadUndoStack = [], cadRedoStack = [];
+
+function initCadCanvas() {
+  cadCanvas = document.getElementById('cadCanvas');
+  if (!cadCanvas) return;
+  cadCtx = cadCanvas.getContext('2d');
+  resizeCadCanvas();
+  window.addEventListener('resize', resizeCadCanvas);
+
+  cadCanvas.addEventListener('mousedown', onCadMouseDown);
+  cadCanvas.addEventListener('mousemove', onCadMouseMove);
+  cadCanvas.addEventListener('mouseup', onCadMouseUp);
+  cadCanvas.addEventListener('wheel', onCadWheel, { passive: false });
+  cadCanvas.addEventListener('contextmenu', e => e.preventDefault());
+  cadCanvas.addEventListener('dblclick', onCadDblClick);
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('v-cad') || document.getElementById('v-cad').style.display === 'none') return;
+    if (e.key === 'r' || e.key === 'R') rotateSelected(15);
+    if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+    if (e.key === 'Escape') { cadPendingPlaceType = null; cadState.selectedId = null; renderCadNow(); updateCadPropsPanel(); }
+    if (e.ctrlKey && e.key === 'z') cadUndo();
+  });
+
+  buildComponentPalette();
+  renderCadNow();
+}
+
+function resizeCadCanvas() {
+  if (!cadCanvas) return;
+  const wrap = cadCanvas.parentElement;
+  cadCanvas.width = wrap.clientWidth;
+  cadCanvas.height = wrap.clientHeight;
+  renderCadNow();
+}
+
+function renderCadNow() {
+  if (!cadCtx) return;
+  renderCad(cadCtx, cadState, cadCanvas.width, cadCanvas.height, cadPanX, cadPanY, cadZoom, cadHoverSnap, cadState.selectedId);
+}
+
+function screenToWorld(sx, sy) {
+  return { x: (sx - cadPanX) / cadZoom, y: (sy - cadPanY) / cadZoom };
+}
+
+function getCadMousePos(e) {
+  const r = cadCanvas.getBoundingClientRect();
+  return { sx: e.clientX - r.left, sy: e.clientY - r.top };
+}
+
+function hitTestObject(wx, wy) {
+  // reverse iterate so top-most (last drawn) is picked first
+  const list = [...cadState.objects.values()].reverse();
+  for (const obj of list) {
+    const def = COMPONENT_LIBRARY[obj.type];
+    const w = obj.length || (def.size ? def.size.w : 40);
+    const h = def.size ? def.size.h : 30;
+    // transform point into object's local space
+    const rad = -obj.rotation * Math.PI / 180;
+    const dx = wx - obj.x, dy = wy - obj.y;
+    const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+    const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+    const minX = (obj.length ? 0 : -w/2) - 6;
+    const maxX = (obj.length ? w : w/2) + 6;
+    if (lx >= minX && lx <= maxX && ly >= -h/2-6 && ly <= h/2+6) return obj;
+  }
+  return null;
+}
+
+function onCadMouseDown(e) {
+  const { sx, sy } = getCadMousePos(e);
+  const { x: wx, y: wy } = screenToWorld(sx, sy);
+
+  if (cadPendingPlaceType) {
+    saveCadUndo();
+    const obj = cadState.addObject(cadPendingPlaceType, wx, wy);
+    trySnapObject(obj);
+    cadState.selectedId = obj.id;
+    if (!e.shiftKey) cadPendingPlaceType = null;
+    renderCadNow();
+    updateCadPropsPanel();
+    return;
+  }
+
+  if (e.button === 2 || e.altKey) {
+    cadIsPanning = true;
+    cadPanStart = { sx, sy, panX: cadPanX, panY: cadPanY };
+    return;
+  }
+
+  const hit = hitTestObject(wx, wy);
+  if (hit) {
+    saveCadUndo();
+    cadDragObjId = hit.id;
+    cadDragOffset = { x: wx - hit.x, y: wy - hit.y };
+    cadState.selectedId = hit.id;
+  } else {
+    cadState.selectedId = null;
+  }
+  renderCadNow();
+  updateCadPropsPanel();
+}
+
+function onCadMouseMove(e) {
+  const { sx, sy } = getCadMousePos(e);
+  const { x: wx, y: wy } = screenToWorld(sx, sy);
+  document.getElementById('cadCursorPos').textContent = `X: ${(wx/10).toFixed(1)}m  Y: ${(wy/10).toFixed(1)}m`;
+
+  if (cadIsPanning && cadPanStart) {
+    cadPanX = cadPanStart.panX + (sx - cadPanStart.sx);
+    cadPanY = cadPanStart.panY + (sy - cadPanStart.sy);
+    renderCadNow();
+    return;
+  }
+
+  if (cadDragObjId) {
+    const nx = wx - cadDragOffset.x, ny = wy - cadDragOffset.y;
+    cadState.moveObject(cadDragObjId, nx, ny);
+    const obj = cadState.objects.get(cadDragObjId);
+    cadHoverSnap = null;
+    if (cadState.portSnap) {
+      const ports = cadState.getWorldPorts(obj);
+      for (const p of ports) {
+        if (cadState.isPortConnected(p.objId, p.portId)) continue;
+        const snap = cadState.findSnapPort(p.x, p.y, obj.id);
+        if (snap) { cadHoverSnap = snap; break; }
+      }
+    }
+    renderCadNow();
+  }
+}
+
+function onCadMouseUp(e) {
+  if (cadDragObjId) {
+    const obj = cadState.objects.get(cadDragObjId);
+    if (cadState.portSnap && obj) {
+      trySnapObject(obj);
+    }
+  }
+  cadDragObjId = null;
+  cadIsPanning = false;
+  cadHoverSnap = null;
+  renderCadNow();
+  updateCadMassList();
+}
+
+function trySnapObject(obj) {
+  const ports = cadState.getWorldPorts(obj);
+  for (const p of ports) {
+    if (cadState.isPortConnected(p.objId, p.portId)) continue;
+    const snap = cadState.findSnapPort(p.x, p.y, obj.id);
+    if (snap) {
+      // Move object so the port aligns exactly, then connect
+      const targetObj = cadState.objects.get(obj.id);
+      const dx = snap.x - p.x, dy = snap.y - p.y;
+      targetObj.x += dx; targetObj.y += dy;
+      cadState.updateAllConnectionsFor(obj.id);
+      cadState.connect(obj.id, p.portId, snap.objId, snap.portId);
+      showToast('🔗 Koblet sammen');
+    }
+  }
+}
+
+function onCadWheel(e) {
+  e.preventDefault();
+  const { sx, sy } = getCadMousePos(e);
+  const before = screenToWorld(sx, sy);
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  cadZoom = Math.max(0.25, Math.min(4, cadZoom * factor));
+  const after = { x: (sx - cadPanX) / cadZoom, y: (sy - cadPanY) / cadZoom };
+  cadPanX += (after.x - before.x) * cadZoom;
+  cadPanY += (after.y - before.y) * cadZoom;
+  document.getElementById('cadZoomVal').textContent = Math.round(cadZoom*100)+'%';
+  renderCadNow();
+}
+
+function onCadDblClick(e) {
+  const { sx, sy } = getCadMousePos(e);
+  const { x: wx, y: wy } = screenToWorld(sx, sy);
+  const hit = hitTestObject(wx, wy);
+  if (hit) rotateObjectById(hit.id, 90);
+}
+
+function rotateSelected(deg) {
+  if (cadState.selectedId) rotateObjectById(cadState.selectedId, deg);
+}
+function rotateObjectById(id, deg) {
+  saveCadUndo();
+  cadState.rotateObject(id, deg);
+  renderCadNow();
+}
+
+function deleteSelected() {
+  if (!cadState.selectedId) return;
+  saveCadUndo();
+  cadState.removeObject(cadState.selectedId);
+  cadState.selectedId = null;
+  renderCadNow();
+  updateCadPropsPanel();
+  updateCadMassList();
+}
+
+function cadZoomBtn(delta) {
+  cadZoom = Math.max(0.25, Math.min(4, cadZoom + delta));
+  document.getElementById('cadZoomVal').textContent = Math.round(cadZoom*100)+'%';
+  renderCadNow();
+}
+function cadZoomFit() {
+  cadZoom = 1; cadPanX = 40; cadPanY = 200;
+  document.getElementById('cadZoomVal').textContent = '100%';
+  renderCadNow();
+}
+
+// ---- Undo ----
+function saveCadUndo() {
+  cadUndoStack.push(cadState.serialize());
+  if (cadUndoStack.length > 40) cadUndoStack.shift();
+  cadRedoStack = [];
+}
+function cadUndo() {
+  if (!cadUndoStack.length) return;
+  cadRedoStack.push(cadState.serialize());
+  const prev = cadUndoStack.pop();
+  cadState.loadFrom(prev);
+  renderCadNow();
+  updateCadMassList();
+  showToast('↩ Angret');
+}
+
+// ---- Component palette ----
+function buildComponentPalette() {
+  const container = document.getElementById('cadPalette');
+  if (!container) return;
+  container.innerHTML = '';
+  const byCat = {};
+  Object.entries(COMPONENT_LIBRARY).forEach(([key, def]) => {
+    (byCat[def.category] = byCat[def.category] || []).push([key, def]);
+  });
+  Object.entries(CATEGORY_LABELS).forEach(([cat, label]) => {
+    if (!byCat[cat]) return;
+    const section = document.createElement('div');
+    section.className = 'ps';
+    section.innerHTML = `<div class="ps-title">${label}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'sym-grid';
+    byCat[cat].forEach(([key, def]) => {
+      const btn = document.createElement('div');
+      btn.className = 'sym-btn';
+      btn.title = def.label;
+      btn.innerHTML = `<div style="font-size:20px;line-height:1">${paletteEmoji(key)}</div><span>${def.label}</span>`;
+      btn.onclick = () => {
+        cadPendingPlaceType = key;
+        showToast('Klikk på lerretet for å plassere: ' + def.label);
+      };
+      grid.appendChild(btn);
+    });
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+function paletteEmoji(key) {
+  const map = {
+    'duct-round':'⭕','duct-rect':'▭','duct-flex':'🌀',
+    'bend-90':'↱','bend-45':'↗','t-piece':'⊤','cross-piece':'✛','reducer':'▷',
+    'valve-supply':'🟢','valve-exhaust':'🔴','valve-control':'⬜','damper':'⬛','fire-damper':'🔥',
+    'silencer':'▤','filter':'▥','fan':'🌪','ahu':'🏭',
+    'grille':'▦','outdoor-intake':'↘','exhaust-outlet':'↗'
+  };
+  return map[key] || '▪';
+}
+
+// ---- Properties panel ----
+function updateCadPropsPanel() {
+  const panel = document.getElementById('cadProps');
+  if (!panel) return;
+  const obj = cadState.selectedId ? cadState.objects.get(cadState.selectedId) : null;
+  if (!obj) {
+    panel.innerHTML = '<div class="ps-title">Egenskaper</div><div style="font-size:12px;color:var(--soft);padding:8px">Ingen komponent valgt</div>';
+    return;
+  }
+  const def = COMPONENT_LIBRARY[obj.type];
+  let html = `<div class="ps-title">Egenskaper — ${def.label}</div>`;
+  html += `<div class="ps-row"><span>Rotasjon</span><span class="ps-val">${obj.rotation}°</span></div>`;
+  html += `<div class="ps-row"><span>Posisjon</span><span class="ps-val">${(obj.x/10).toFixed(1)}, ${(obj.y/10).toFixed(1)} m</span></div>`;
+
+  html += `<div class="fr" style="margin-top:8px"><label class="fl">Dimensjon</label><select class="fi" id="cadDimSelect">`;
+  def.dimensions.forEach(d => {
+    html += `<option value="${d}" ${d===obj.dimension?'selected':''}>${d}</option>`;
+  });
+  html += `</select></div>`;
+
+  if (def.resizable) {
+    html += `<div class="fr"><label class="fl">Lengde (cm)</label><input class="fi" type="number" id="cadLenInput" value="${obj.length||100}" min="20" step="10"></div>`;
+  }
+
+  html += `<div style="display:flex;gap:6px;margin-top:8px">
+    <button class="ct-btn" onclick="rotateSelected(-15)">↺ Rotér</button>
+    <button class="ct-btn" onclick="rotateSelected(15)">↻ Rotér</button>
+    <button class="ct-btn" style="color:var(--red)" onclick="deleteSelected()">🗑 Slett</button>
+  </div>`;
+
+  if (def.products && def.products.length) {
+    html += `<div class="ps-title" style="margin-top:12px">Produkt</div>`;
+    def.products.forEach(p => {
+      html += `<div style="font-size:11px;color:var(--soft);padding:6px 8px;background:var(--surface);border-radius:6px;margin-bottom:4px">
+        ${p.produsent ? `<strong style="color:var(--text)">${p.produsent}</strong> ${p.serie||''}<br>` : '<em>Produsent ikke valgt ennå</em><br>'}
+        ${p.produktkode ? 'Art.nr: '+p.produktkode+'<br>' : ''}
+        ${p.beskrivelse}
+      </div>`;
+    });
+  }
+
+  panel.innerHTML = html;
+
+  document.getElementById('cadDimSelect').onchange = (e) => {
+    saveCadUndo();
+    obj.dimension = e.target.value;
+    renderCadNow();
+  };
+  const lenInput = document.getElementById('cadLenInput');
+  if (lenInput) {
+    lenInput.oninput = (e) => {
+      cadState.setLength(obj.id, parseFloat(e.target.value) || 100);
+      renderCadNow();
+    };
+  }
+}
+
+// ---- Mass list (component count / bill of materials for CAD canvas) ----
+function updateCadMassList() {
+  const el = document.getElementById('cadMassList');
+  if (!el) return;
+  const counts = {};
+  for (const obj of cadState.objects.values()) {
+    const def = COMPONENT_LIBRARY[obj.type];
+    const key = def.label + ' (' + obj.dimension + ')';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  const rows = Object.entries(counts).sort((a,b)=>a[0].localeCompare(b[0]));
+  if (!rows.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--soft);padding:8px">Ingen komponenter plassert ennå</div>';
+    return;
+  }
+  el.innerHTML = '<table class="qty-table"><thead><tr><th>Komponent</th><th>Ant.</th></tr></thead><tbody>' +
+    rows.map(([k,v]) => `<tr><td>${k}</td><td class="qty-val">${v}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+// ---- Export ----
+function cadClearAll() {
+  if (!confirm('Slette hele tegningen?')) return;
+  saveCadUndo();
+  cadState.objects.clear();
+  cadState.connections.clear();
+  cadState.selectedId = null;
+  renderCadNow();
+  updateCadPropsPanel();
+  updateCadMassList();
+}
+
+function cadExportPNG() {
+  const link = document.createElement('a');
+  link.download = 'ventilasjonstegning.png';
+  link.href = cadCanvas.toDataURL('image/png');
+  link.click();
+  showToast('📤 Eksportert som PNG');
+}
+
+
+// ==== APP MODE SWITCHING (PDF vs CAD) ====
+function setAppMode(mode) {
+  const pdfWs = document.querySelector('.workspace');
+  const cadWs = document.getElementById('cadWorkspace');
+  const btnPdf = document.getElementById('modeBtnPdf');
+  const btnCad = document.getElementById('modeBtnCad');
+  if (mode === 'cad') {
+    pdfWs.style.display = 'none';
+    cadWs.classList.add('active');
+    btnPdf.classList.remove('active');
+    btnCad.classList.add('active');
+    setTimeout(() => { resizeCadCanvas(); }, 50);
+  } else {
+    pdfWs.style.display = 'flex';
+    cadWs.classList.remove('active');
+    btnCad.classList.remove('active');
+    btnPdf.classList.add('active');
+  }
+}
+
+function switchCadTab(id, el) {
+  document.querySelectorAll('.cad-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cad-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cadPanel' + id.charAt(0).toUpperCase() + id.slice(1)).classList.add('active');
+}
+
+function toggleCadSnap(btn) {
+  cadState.portSnap = !cadState.portSnap;
+  btn.classList.toggle('on');
+  showToast(cadState.portSnap ? '⊞ Snap på' : 'Snap av');
+}
+
 // INIT
 window.addEventListener('DOMContentLoaded', () => {
   saveState();
   zoomFit();
   switchTab('lag');
   showToast('✓ Tegning lastet inn');
+  initCadCanvas();
 });
 </script>
 </body>
